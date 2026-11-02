@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower 1 ITS — Tugas 2 Grafika Komputer</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+
+  <!-- ================================================================
+       1. IDENTITAS KELOMPOK
+       ================================================================ -->
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Tugas 2 Grafika Komputer · WebGL2 murni (tanpa Three.js)</p>
+      <h1>Scene 3D Gedung Menara Sains <span>(Tower 1 ITS)</span></h1>
+      <p class="lead">
+        Area Fakultas Sains dan Analitika Data ITS: menara 13 lantai dengan louver dan tangga darurat,
+        pohon besar di depan gedung, totem F-SCIENTICS, mahasiswa berlalu-lalang, motor, dan siklus siang-malam.
+      </p>
+
+      <div class="team">
+        <div class="team-card">
+          <span class="team-role">Kelompok</span>
+          <strong>[Nama Kelompok]</strong>
+        </div>
+        <div class="team-card">
+          <span class="team-role">Anggota A</span>
+          <strong>[Nama Anggota A]</strong>
+          <span>[NRP]</span>
+        </div>
+        <div class="team-card">
+          <span class="team-role">Anggota B</span>
+          <strong>Raynald Ramadhani Fachriansyah</strong>
+          <span>5025241020</span>
+        </div>
+      </div>
+
+      <nav class="toc">
+        <a href="#foto">Foto asli</a>
+        <a href="#video">Video asli</a>
+        <a href="#scene">Scene WebGL</a>
+        <a href="#tree">Diagram tree</a>
+        <a href="#tugas">Pembagian tugas</a>
+        <a href="#konsep">Konsep</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ================================================================
+         2. FOTO OBJEK ASLI
+         ================================================================ -->
+    <section id="foto" class="section">
+      <div class="section-head">
+        <h2>Foto objek asli</h2>
+        <p>Hasil survei lapangan, Senin 2 November 2026 pukul ±08:45 WIB (dari metadata foto).</p>
+      </div>
+
+      <div class="gallery">
+        <figure>
+          <img src="./assets/photos/foto-tower-full.jpg" alt="Tower 1 ITS dilihat dari bawah, tampak louver kiri dan pita atap bertuliskan TOWER 1 ITS" loading="lazy" />
+          <figcaption>Menara penuh: pita atap "TOWER 1 ITS", louver dan tangga darurat di kiri, strip kaca biru.</figcaption>
+        </figure>
+        <figure>
+          <img src="./assets/photos/foto-depan.jpg" alt="Tampak depan Tower 1 dengan pohon besar, totem, dan pos satpam" loading="lazy" />
+          <figcaption>Tampak depan: pohon besar, totem F-SCIENTICS, taman, dan pos satpam beratap genteng.</figcaption>
+        </figure>
+        <figure>
+          <img src="./assets/photos/foto-kiri-kpa2.jpg" alt="Gedung parkir KPA 2 di sisi kiri" loading="lazy" />
+          <figcaption>Sisi kiri: gedung parkir KPA 2, palang parkir kuning-hitam, motor ojol.</figcaption>
+        </figure>
+        <figure>
+          <img src="./assets/photos/foto-kanan.jpg" alt="Sisi kanan dengan pepohonan rindang" loading="lazy" />
+          <figcaption>Sisi kanan: pepohonan rindang, gedung lama beratap genteng, mahasiswa.</figcaption>
+        </figure>
+      </div>
+
+      <div class="stopmotion card">
+        <div class="stopmotion-view">
+          <img id="smImage" src="./assets/photos/stop-motion-pan/1.jpg" alt="Frame stop-motion" />
+        </div>
+        <div class="stopmotion-controls">
+          <div class="seg">
+            <button data-sm="pan" class="active">Pan (9 foto)</button>
+            <button data-sm="tilt">Tilt (7 foto)</button>
+          </div>
+          <input id="smSlider" type="range" min="1" max="9" value="1" />
+          <button id="smPlay" class="btn">▶ Putar</button>
+          <span id="smLabel" class="muted"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         3. VIDEO OBJEK ASLI
+         ================================================================ -->
+    <section id="video" class="section">
+      <div class="section-head">
+        <h2>Video objek asli</h2>
+        <p>Tujuh klip dengan teknik gerak kamera berbeda. Setiap teknik ditiru oleh tombol "Gerak kamera video" di scene WebGL.</p>
+      </div>
+
+      <div class="video-layout card">
+        <video id="mainVideo" controls playsinline preload="metadata" src="./assets/videos/stay.mp4"></video>
+        <div class="video-tabs">
+          <button data-video-tab="./assets/videos/stay.mp4" class="active">Stay</button>
+          <button data-video-tab="./assets/videos/stay-0-5-view.mp4">Stay 0.5×</button>
+          <button data-video-tab="./assets/videos/pan-right-left-fixx.mp4">Pan kanan-kiri</button>
+          <button data-video-tab="./assets/videos/pan-right-left-bonus.mp4">Pan (bonus)</button>
+          <button data-video-tab="./assets/videos/tilt-up-down.mp4">Tilt atas-bawah</button>
+          <button data-video-tab="./assets/videos/zoom-in-out.mp4">Zoom in-out</button>
+          <button data-video-tab="./assets/videos/dolly-in.mp4">Dolly in</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         4. CANVAS WEBGL (berdampingan dengan foto asli)
+         ================================================================ -->
+    <section id="scene" class="section section-wide">
+      <div class="section-head">
+        <h2>Foto asli vs scene WebGL</h2>
+        <p>Pilih foto di kiri: kamera WebGL akan berpindah ke sudut pandang yang mirip. <strong>Klik canvas</strong> untuk mengaktifkan kontrol keyboard.</p>
+      </div>
+
+      <div class="compare">
+        <div class="compare-photo card">
+          <img id="refPhoto" src="./assets/photos/foto-depan.jpg" alt="Foto pembanding" />
+          <div class="seg seg-wrap">
+            <button data-photo="./assets/photos/foto-depan.jpg" data-move="stay" class="active">Depan (titik video)</button>
+            <button data-photo="./assets/photos/foto-tower-full.jpg" data-preset="tiltPhoto">Menara penuh</button>
+            <button data-photo="./assets/photos/stop-motion-pan/1.jpg" data-move="stayWide">Ultra-wide 0.5×</button>
+            <button data-photo="./assets/photos/stop-motion-tilt/1.jpg" data-preset="student">Mata mahasiswa</button>
+          </div>
+        </div>
+
+        <div id="canvasWrap" class="compare-canvas card">
+          <canvas id="glCanvas" tabindex="0" aria-label="Scene WebGL Tower 1 ITS"></canvas>
+          <p id="glError" class="gl-error" hidden>Browser ini tidak mendukung WebGL2. Gunakan Chrome, Edge, Firefox, atau Safari versi terbaru.</p>
+          <button id="btnFullscreen" class="btn btn-float" title="Layar penuh">⛶</button>
+        </div>
+      </div>
+
+      <!-- HUD (gaya Praktikum 4 & 5) -->
+      <section id="hud" class="hud">
+        <div>FPS: <span id="hudFps"></span></div>
+        <div>Jam: <span id="hudTime"></span></div>
+        <div>Kamera: <span id="hudCamera"></span></div>
+        <div>Posisi: <span id="hudPosition"></span></div>
+        <div>Projection: <span id="hudProjection"></span></div>
+        <div>FOV: <span id="hudFov"></span></div>
+        <div>Near/Far: <span id="hudClip"></span></div>
+        <div>Shading: <span id="hudShading"></span></div>
+        <div>Filtering: <span id="hudFilter"></span></div>
+        <div>Wrapping: <span id="hudWrap"></span></div>
+        <div>Lighting: <span id="hudLightModel"></span></div>
+        <div>Render: <span id="hudDraw"></span></div>
+      </section>
+
+      <!-- PANEL KONTROL -->
+      <div class="panels">
+        <div class="panel card">
+          <h3>Animasi</h3>
+          <button id="btnPause" class="btn">⏸ Pause</button>
+          <label class="row">Kecepatan <input id="rangeSpeed" type="range" min="0" max="3" step="0.05" value="1" /><span id="speedValue"></span></label>
+
+          <h3>Waktu &amp; siklus siang-malam</h3>
+          <label class="row">Jam <input id="rangeHour" type="range" min="0" max="23.95" step="0.05" value="8.75" /><span id="hourValue"></span></label>
+          <label class="check"><input id="chkAutoDay" type="checkbox" /> Siklus otomatis</label>
+          <div id="hourPresets" class="seg seg-wrap">
+            <button data-hour="6.3">Pagi</button>
+            <button data-hour="8.75">08:45 (foto)</button>
+            <button data-hour="12">Siang</button>
+            <button data-hour="17.4">Sore</button>
+            <button data-hour="21">Malam</button>
+          </div>
+        </div>
+
+        <div class="panel card">
+          <h3>Lighting</h3>
+          <div class="checks">
+            <label class="check"><input id="chkAmbient" type="checkbox" checked /> Ambient</label>
+            <label class="check"><input id="chkDiffuse" type="checkbox" checked /> Diffuse</label>
+            <label class="check"><input id="chkSpecular" type="checkbox" checked /> Specular</label>
+            <label class="check"><input id="chkBlinn" type="checkbox" checked /> Blinn-Phong</label>
+            <label class="check"><input id="chkShadow" type="checkbox" checked /> Bayangan</label>
+            <label class="check"><input id="chkFog" type="checkbox" checked /> Kabut</label>
+            <label class="check"><input id="chkToneMap" type="checkbox" checked /> Tone mapping</label>
+          </div>
+          <label class="row">Ambient <input id="rangeAmbient" type="range" min="0" max="1.5" step="0.01" /><span id="ambientValue"></span></label>
+          <label class="row">Matahari <input id="rangeSun" type="range" min="0" max="2" step="0.01" /><span id="sunValue"></span></label>
+          <label class="row">Specular <input id="rangeSpecular" type="range" min="0" max="3" step="0.01" value="1" /><span id="specularValue"></span></label>
+          <label class="row">Shininess <input id="rangeShininess" type="range" min="0.1" max="4" step="0.05" value="1" /><span id="shininessValue"></span></label>
+          <label class="row">Exposure <input id="rangeExposure" type="range" min="0.3" max="2.5" step="0.05" /><span id="exposureValue"></span></label>
+        </div>
+
+        <div class="panel card">
+          <h3>Texture &amp; tampilan</h3>
+          <div class="checks">
+            <label class="check"><input id="chkTexture" type="checkbox" checked /> Texture</label>
+            <label class="check"><input id="chkFlat" type="checkbox" /> Flat shading</label>
+            <label class="check"><input id="chkWireframe" type="checkbox" /> Wireframe</label>
+            <label class="check"><input id="chkDepth" type="checkbox" checked /> Depth test</label>
+          </div>
+          <div class="seg seg-wrap">
+            <button id="btnFilter">Filter</button>
+            <button id="btnWrap">Wrap</button>
+          </div>
+          <label class="row">UV scale <input id="rangeUv" type="range" min="0.25" max="4" step="0.05" value="1" /><span id="uvValue"></span></label>
+        </div>
+
+        <div class="panel card">
+          <h3>Kamera</h3>
+          <div class="seg seg-wrap">
+            <button data-preset="overview">1 · Overview jauh</button>
+            <button data-preset="near">2 · Dekat gedung</button>
+            <button data-preset="student">3 · Mata mahasiswa</button>
+            <button data-preset="top">4 · Top view</button>
+          </div>
+          <h3>Gerak kamera video</h3>
+          <div class="seg seg-wrap">
+            <button data-move="stay" data-video="./assets/videos/stay.mp4">5 · Stay</button>
+            <button data-move="stayWide" data-video="./assets/videos/stay-0-5-view.mp4">6 · Stay 0.5×</button>
+            <button data-move="pan" data-video="./assets/videos/pan-right-left-fixx.mp4">7 · Pan</button>
+            <button data-move="tilt" data-video="./assets/videos/tilt-up-down.mp4">8 · Tilt</button>
+            <button data-move="zoom" data-video="./assets/videos/zoom-in-out.mp4">9 · Zoom</button>
+            <button data-move="dolly" data-video="./assets/videos/dolly-in.mp4">0 · Dolly in</button>
+          </div>
+          <div class="seg seg-wrap">
+            <button id="btnTour">Auto-tour</button>
+            <button id="btnOrbit">Orbit</button>
+            <button id="btnProjection">Perspective</button>
+            <button id="btnClip">Near/Far</button>
+            <button id="btnReset">Reset (R)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PETUNJUK KONTROL -->
+      <details class="card help" open>
+        <summary>Petunjuk kontrol keyboard &amp; mouse</summary>
+        <div class="keys">
+          <span><kbd>W</kbd>/<kbd>↑</kbd> maju</span>
+          <span><kbd>S</kbd>/<kbd>↓</kbd> mundur</span>
+          <span><kbd>A</kbd>/<kbd>D</kbd> geser kiri/kanan</span>
+          <span><kbd>Q</kbd>/<kbd>E</kbd> atau <kbd>←</kbd>/<kbd>→</kbd> menengok</span>
+          <span><kbd>PgUp</kbd>/<kbd>PgDn</kbd> naik/turun</span>
+          <span>Drag mouse: lihat sekeliling</span>
+          <span>Scroll: maju/mundur</span>
+          <span><kbd>[</kbd>/<kbd>]</kbd> FOV (zoom)</span>
+          <span><kbd>1</kbd>–<kbd>4</kbd> preset kamera</span>
+          <span><kbd>5</kbd>–<kbd>0</kbd> gerak kamera video</span>
+          <span><kbd>V</kbd> auto-tour</span>
+          <span><kbd>O</kbd> orbit</span>
+          <span><kbd>P</kbd> perspective/ortho</span>
+          <span><kbd>N</kbd> preset near/far</span>
+          <span><kbd>R</kbd> reset kamera</span>
+          <span><kbd>Space</kbd> pause</span>
+          <span><kbd>M</kbd> siklus siang-malam</span>
+          <span><kbd>,</kbd>/<kbd>.</kbd> jam −/+ 30 menit</span>
+          <span><kbd>F</kbd> flat/smooth</span>
+          <span><kbd>T</kbd> filtering</span>
+          <span><kbd>G</kbd> wrapping</span>
+          <span><kbd>B</kbd> Blinn/Phong</span>
+          <span><kbd>H</kbd> bayangan</span>
+          <span><kbd>X</kbd> wireframe</span>
+        </div>
+      </details>
+    </section>
+
+    <!-- ================================================================
+         5. DIAGRAM TREE HUBUNGAN ANTAR OBJEK
+         ================================================================ -->
+    <section id="tree" class="section">
+      <div class="section-head">
+        <h2>Diagram tree hubungan antar objek</h2>
+        <p>
+          Diagram ini <strong>dibuat otomatis dari scene graph yang sedang berjalan</strong> (traversal
+          <code>node.children</code> di <code>ui.js</code>), jadi pasti sama dengan struktur kode.
+          Anak yang berulang diringkas (×N). Klik ▸ untuk membuka cabang.
+        </p>
+        <p id="treeStats" class="muted"></p>
+      </div>
+
+      <div class="tree-legend">
+        <span class="badge badge-group">grup</span> node tanpa mesh (hanya transformasi/pivot)
+        <span class="badge badge-anim">animasi</span> node yang punya fungsi animasi (<code>onUpdate</code>)
+        <span class="badge badge-repeat">×N</span> node yang dibuat dengan loop
+      </div>
+
+      <div id="sceneTree" class="tree card"></div>
+    </section>
+
+    <!-- ================================================================
+         6. PEMBAGIAN TUGAS
+         ================================================================ -->
+    <section id="tugas" class="section">
+      <div class="section-head">
+        <h2>Pembagian tugas</h2>
+        <p>Kode dipisah per modul supaya bisa dikerjakan paralel. Kedua anggota memahami seluruh modul (lihat <code>PENJELASAN.md</code>).</p>
+      </div>
+
+      <div class="table-wrap card">
+        <table>
+          <thead>
+            <tr><th>Anggota</th><th>File / modul</th><th>Objek &amp; fitur</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="4"><strong>Anggota A</strong><br />[Nama Anggota A]</td>
+              <td>Survei lapangan</td>
+              <td>Foto, 7 video (stay, pan, tilt, zoom, dolly), stop-motion pan &amp; tilt</td>
+            </tr>
+            <tr>
+              <td><code>building.js</code></td>
+              <td>Tower 1: badan menara, 13 lantai + strip kaca, louver + tangga darurat zig-zag, pita atap "TOWER 1 ITS"; gedung KPA 2, gedung rendah, gedung lama</td>
+            </tr>
+            <tr>
+              <td><code>texture.js</code></td>
+              <td>Texture fasad panel, kaca, paving herringbone, papan totem, crop foto asli (daun, paving)</td>
+            </tr>
+            <tr>
+              <td><code>index.html</code>, <code>style.css</code></td>
+              <td>Halaman utama, galeri foto/video, pengujian kemiripan dengan foto asli</td>
+            </tr>
+            <tr>
+              <td rowspan="6"><strong>Anggota B</strong><br />Raynald Ramadhani Fachriansyah</td>
+              <td><code>main.js</code>, <code>shaders.js</code>, <code>scene-graph.js</code>, <code>geometry.js</code>, <code>math3d.js</code></td>
+              <td>Arsitektur WebGL2, render loop, shadow map, shader Phong/Blinn-Phong, scene graph, primitif</td>
+            </tr>
+            <tr>
+              <td><code>camera.js</code></td>
+              <td>Kamera first-person, smoothing, preset, gerak kamera video, auto-tour, orbit, ortho</td>
+            </tr>
+            <tr>
+              <td><code>lighting.js</code>, <code>environment.js</code></td>
+              <td>Matahari mengorbit, siklus siang-malam, lampu titik, langit, awan, tanah, tiang listrik</td>
+            </tr>
+            <tr>
+              <td><code>tree.js</code></td>
+              <td>Pohon hierarki batang → cabang → daun, goyang angin, efek tumbuh</td>
+            </tr>
+            <tr>
+              <td><code>student.js</code>, <code>vehicle.js</code></td>
+              <td>Mahasiswa berjalan (sendi bahu/siku/pinggul/lutut), motor dengan roda berputar</td>
+            </tr>
+            <tr>
+              <td><code>props.js</code>, <code>ui.js</code></td>
+              <td>Taman, totem F-SCIENTICS, palang parkir otomatis, pos satpam, lampu taman; panel UI &amp; diagram tree</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         7. PENJELASAN SINGKAT KONSEP
+         ================================================================ -->
+    <section id="konsep" class="section">
+      <div class="section-head">
+        <h2>Konsep yang diterapkan</h2>
+      </div>
+
+      <div class="concepts">
+        <div class="card concept">
+          <h3>Transformasi</h3>
+          <p><b>Translasi:</b> mahasiswa berjalan di jalur, motor, awan. <b>Rotasi:</b> matahari mengorbit, sendi lengan &amp; kaki, roda, palang parkir, pohon bergoyang. <b>Skala:</b> pohon tumbuh, daun "bernapas", glow matahari, louver (skala non-seragam).</p>
+        </div>
+        <div class="card concept">
+          <h3>Hierarchical modelling</h3>
+          <p><code>world = parent × local</code>, dengan <code>local = T × Ry × Rx × Rz × S</code>. Rotasi di bahu menggerakkan lengan bawah dan tangan; goyangan batang menggerakkan seluruh cabang dan daun.</p>
+        </div>
+        <div class="card concept">
+          <h3>Kamera</h3>
+          <p>View matrix dari <code>lookAt(eye, eye + arah(yaw, pitch), up)</code>, proyeksi perspective/orthographic, smoothing <code>k = 1 − e<sup>−s·dt</sup></code>, dan gerak pan/tilt/zoom/dolly seperti video.</p>
+        </div>
+        <div class="card concept">
+          <h3>Lighting</h3>
+          <p>Per-fragment: ambient hemisphere + diffuse Lambert + specular Phong/Blinn-Phong. Matahari = directional light, lampu taman = point light. Shadow mapping dengan PCF, emissive malam, dan fog.</p>
+        </div>
+        <div class="card concept">
+          <h3>Texture</h3>
+          <p>UV dalam meter agar grid panel tidak melar, texture prosedural canvas 2D, crop foto asli, mipmap, filtering (T), wrapping (G), dan emissive map untuk jendela yang menyala di malam hari.</p>
+        </div>
+      </div>
+
+      <figure class="card screenshot">
+        <img src="./assets/screenshots/perbandingan.jpg" alt="Perbandingan foto asli dan render WebGL dari sudut yang sama" loading="lazy" />
+        <figcaption>Perbandingan foto asli (kiri) dan render WebGL (kanan) dari sudut yang mirip.</figcaption>
+      </figure>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Tugas 2 Grafika Komputer · Teknik Informatika ITS · WebGL2 + JavaScript murni
+  </footer>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
