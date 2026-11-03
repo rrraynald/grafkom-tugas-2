@@ -15,9 +15,6 @@ bayangan, dan gerak kamera yang meniru video survei.
 
 ## 1. Cara menjalankan
 
-Kode memakai **ES module** (`<script type="module">`, sama seperti Praktikum 4 & 5), jadi **harus
-dibuka lewat local server**. Membuka langsung dengan `file://` diblokir browser (CORS).
-
 **Pilihan A — VS Code Live Server (paling mudah)**
 1. Buka folder ini di VS Code.
 2. Klik kanan `index.html` → **Open with Live Server**.
@@ -40,8 +37,7 @@ Klik canvas dulu supaya kontrol keyboard aktif.
 grafkom-tugas-2/
 ├─ index.html            halaman utama (foto, video, canvas, diagram tree, pembagian tugas)
 ├─ style.css
-├─ README.md             file ini
-├─ PENJELASAN.md         penjelasan konsep + daftar pertanyaan dosen
+├─ README.md             
 ├─ js/
 │  ├─ config.js          SEMUA parameter (ukuran, warna, jumlah, kecepatan, kamera, cahaya)
 │  ├─ math3d.js          Vec3, Mat4 (gaya Praktikum 4/5), normal matrix
@@ -52,11 +48,11 @@ grafkom-tugas-2/
 │  ├─ camera.js          kamera, preset, gerak kamera video, orbit, ortho
 │  ├─ lighting.js        matahari, siklus siang-malam, lampu titik
 │  ├─ environment.js     tanah, langit, matahari, awan, tiang listrik
-│  ├─ building.js        Tower 1 + KPA 2 + gedung sekitar           (Anggota A)
-│  ├─ tree.js            pohon hierarki batang → cabang → daun      (Anggota B)
-│  ├─ student.js         mahasiswa + animasi berjalan               (Anggota B)
-│  ├─ vehicle.js         motor + roda berputar                      (Anggota B)
-│  ├─ props.js           taman, totem, palang parkir, pos satpam    (Anggota B)
+│  ├─ building.js        Tower 1 + KPA 2 + gedung sekitar           
+│  ├─ tree.js            pohon hierarki batang → cabang → daun      
+│  ├─ student.js         mahasiswa + animasi berjalan               
+│  ├─ vehicle.js         motor + roda berputar                      
+│  ├─ props.js           taman, totem, palang parkir, pos satpam    
 │  ├─ ui.js              panel kontrol, HUD, diagram tree otomatis
 │  └─ main.js            init WebGL2, susun scene, render loop, input
 └─ assets/
@@ -95,9 +91,6 @@ grafkom-tugas-2/
 | `B` | Blinn-Phong ↔ Phong | event |
 | `H` | bayangan on/off | event |
 | `X` | wireframe | event |
-
-Panel di bawah canvas juga menyediakan semua toggle dan slider: kecepatan animasi, jam, ambient,
-matahari, specular, shininess, exposure, UV scale, dan depth test.
 
 ---
 
