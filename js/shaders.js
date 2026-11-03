@@ -1,21 +1,4 @@
-// =====================================================================
-// shaders.js — Semua shader GLSL + helper createShader/createProgram
-// ---------------------------------------------------------------------
-// Ada 3 program:
-//  1. SCENE  : lighting per-fragment (ambient + diffuse + specular)
-//              + texture + shadow map + lampu titik + emissive + fog.
-//              Pengembangan langsung dari shader Praktikum 5.
-//  2. SHADOW : hanya menulis kedalaman (depth) dari sudut pandang
-//              matahari → menghasilkan shadow map.
-//  3. SKY    : kubah langit (gradasi warna + cahaya matahari).
-// =====================================================================
 
-// ---------------------------------------------------------------------
-// 1) SCENE — Vertex Shader
-// ---------------------------------------------------------------------
-// Sama seperti Praktikum 5: kirim posisi dunia, normal, dan UV ke
-// fragment shader. Tambahan: v_lightSpacePosition = posisi vertex dilihat
-// dari "kamera matahari" (untuk shadow mapping).
 export const sceneVertexShaderSource = `#version 300 es
 
 in vec3 a_position;
@@ -48,9 +31,7 @@ void main() {
 }
 `;
 
-// ---------------------------------------------------------------------
 // 1) SCENE — Fragment Shader
-// ---------------------------------------------------------------------
 export const MAX_POINT_LIGHTS = 8;
 
 export const sceneFragmentShaderSource = `#version 300 es
@@ -293,9 +274,7 @@ void main() {
 }
 `;
 
-// ---------------------------------------------------------------------
 // 2) SHADOW — render kedalaman dari sudut pandang matahari
-// ---------------------------------------------------------------------
 export const shadowVertexShaderSource = `#version 300 es
 
 in vec3 a_position;
@@ -308,7 +287,6 @@ void main() {
 }
 `;
 
-// Tidak perlu warna: GPU otomatis menulis depth ke depth texture.
 export const shadowFragmentShaderSource = `#version 300 es
 
 precision mediump float;
@@ -317,11 +295,7 @@ void main() {
 }
 `;
 
-// ---------------------------------------------------------------------
 // 3) SKY — kubah langit
-// ---------------------------------------------------------------------
-// Bola besar yang selalu berpusat di kamera (translasi view dibuang)
-// sehingga langit terasa "tak terhingga".
 export const skyVertexShaderSource = `#version 300 es
 
 in vec3 a_position;
@@ -417,9 +391,6 @@ void main() {
 }
 `;
 
-// ---------------------------------------------------------------------
-// Helper Shader & Program (sama dengan Praktikum 4 & 5)
-// ---------------------------------------------------------------------
 export function createShader(gl, type, source) {
   const shader = gl.createShader(type);
 
@@ -458,9 +429,6 @@ export function createProgram(gl, vertexSource, fragmentSource) {
   return program;
 }
 
-// Mengumpulkan semua attribute & uniform location sekali saja di awal
-// (di praktikum ditulis satu per satu; di sini otomatis lewat loop
-// karena jumlah uniform-nya banyak).
 export function getLocations(gl, program) {
   const locations = { attributes: {}, uniforms: {} };
 
@@ -475,7 +443,6 @@ export function getLocations(gl, program) {
 
   for (let i = 0; i < uniformCount; i++) {
     const info = gl.getActiveUniform(program, i);
-    // Uniform array muncul sebagai "nama[0]"; simpan dengan nama dasar.
     const name = info.name.replace(/\[0\]$/, "");
     locations.uniforms[name] = gl.getUniformLocation(program, info.name);
   }

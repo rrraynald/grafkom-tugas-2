@@ -1,21 +1,3 @@
-// =====================================================================
-// texture.js — Loader texture + texture prosedural (canvas 2D)
-// ---------------------------------------------------------------------
-// Pengembangan dari "Membuat Texture Checkerboard" & "Challenge A: Image
-// Texture" di Praktikum 5:
-//   1. Texture PROSEDURAL digambar dengan canvas 2D (panel fasad,
-//      paving herringbone, tulisan "TOWER 1 ITS", totem F-SCIENTICS, dll)
-//      → selalu tersedia walaupun file gambar gagal dimuat.
-//   2. Texture GAMBAR (crop foto asli survey) dimuat dengan Image.onload,
-//      lalu MENGGANTI isi texture prosedural (sama seperti praktikum).
-//
-// Pengaturan yang diterapkan ke semua texture:
-//   - UNPACK_FLIP_Y_WEBGL  : gambar dibalik agar v=0 ada di bawah
-//   - generateMipmap       : versi kecil texture untuk objek jauh
-//   - Filtering (T)        : MIPMAP (LINEAR_MIPMAP_LINEAR) / LINEAR / NEAREST
-//   - Wrapping  (G)        : REPEAT / CLAMP_TO_EDGE / MIRRORED_REPEAT
-// =====================================================================
-
 import { createRandom } from "./math3d.js";
 
 export const FILTER_MODES = ["MIPMAP", "LINEAR", "NEAREST"];
@@ -32,23 +14,16 @@ function nextPowerOf2(value) {
 export class TextureManager {
   constructor(gl) {
     this.gl = gl;
-    this.textures = new Map();   // nama → WebGLTexture
+    this.textures = new Map();
     this.filterIndex = 0;
     this.wrapIndex = 0;
 
-    // Anisotropic filtering: paving yang dilihat miring tetap tajam
     this.anisotropy = gl.getExtension("EXT_texture_filter_anisotropic");
   }
 
-  // ------------------------------------------------------------------
-  // Upload sumber gambar/canvas ke texture (sama seperti praktikum)
-  // ------------------------------------------------------------------
   upload(texture, source) {
     const gl = this.gl;
 
-    // NPOT: WebGL2 sebenarnya mendukung mipmap untuk ukuran bukan
-    // pangkat 2, tetapi kita tetap ubah ke pangkat 2 agar aman dan
-    // konsisten (di WebGL1 ini WAJIB).
     if (!isPowerOf2(source.width) || !isPowerOf2(source.height)) {
       const resized = document.createElement("canvas");
       resized.width = Math.min(nextPowerOf2(source.width), 2048);
@@ -66,9 +41,6 @@ export class TextureManager {
     this.applySettings(texture);
   }
 
-  // ------------------------------------------------------------------
-  // Texture prosedural: drawFn(ctx, width, height, random)
-  // ------------------------------------------------------------------
   fromCanvas(name, width, height, drawFn, seed = 1) {
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -83,11 +55,7 @@ export class TextureManager {
 
     return texture;
   }
-
-  // ------------------------------------------------------------------
-  // Texture gambar (crop foto asli). Texture prosedural `name` dipakai
-  // dulu; setelah gambar selesai dimuat, isinya diganti.
-  // ------------------------------------------------------------------
+  
   loadImage(name, url) {
     const texture = this.textures.get(name);
 
@@ -103,7 +71,6 @@ export class TextureManager {
     };
 
     image.onerror = () => {
-      // Tidak fatal: texture prosedural tetap dipakai
       console.warn(`Gagal memuat ${url}, memakai texture prosedural.`);
     };
 
@@ -114,9 +81,6 @@ export class TextureManager {
     return this.textures.get(name) || null;
   }
 
-  // ------------------------------------------------------------------
-  // Filtering & wrapping (tombol T dan G, seperti Praktikum 5)
-  // ------------------------------------------------------------------
   applySettings(texture) {
     const gl = this.gl;
     const filter = FILTER_MODES[this.filterIndex];
@@ -131,7 +95,6 @@ export class TextureManager {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     } else {
-      // Trilinear: interpolasi di dalam & antar level mipmap
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     }
@@ -178,11 +141,6 @@ export class TextureManager {
   }
 }
 
-// =====================================================================
-// HELPER GAMBAR
-// =====================================================================
-
-// Variasi warna kecil (noise) agar permukaan tidak terlihat datar/plastik
 function noise(ctx, w, h, random, amount, count, size = 2) {
   for (let i = 0; i < count; i++) {
     const v = Math.floor((random() - 0.5) * amount);
@@ -193,11 +151,6 @@ function noise(ctx, w, h, random, amount, count, size = 2) {
   }
 }
 
-function rgb(c) {
-  return `rgb(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)})`;
-}
-
-// Teks yang otomatis mengecil bila terlalu lebar
 function fitText(ctx, text, x, y, maxWidth, fontSize, weight = "bold", family = "Arial, sans-serif") {
   let size = fontSize;
   ctx.font = `${weight} ${size}px ${family}`;
@@ -210,11 +163,7 @@ function fitText(ctx, text, x, y, maxWidth, fontSize, weight = "bold", family = 
   ctx.fillText(text, x, y);
 }
 
-// =====================================================================
-// SEMUA TEXTURE PROSEDURAL SCENE
-// =====================================================================
 export function createAllTextures(tm) {
-  // ---------------- Checkerboard (warisan Praktikum 5) ----------------
   tm.fromCanvas("checker", 64, 64, (ctx) => {
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
@@ -224,10 +173,6 @@ export function createAllTextures(tm) {
     }
   });
 
-  // ---------------- Fasad panel Tower 1 -------------------------------
-  // 1 tile texture = 4 kolom panel × 4 lantai (2 baris panel per lantai)
-  // → di building.js, tile UV = [4 × lebarKolom, 4 × tinggiLantai].
-  // Warna mendekati putih; warna akhir diatur oleh material.color.
   const FACADE_COLS = 4, FACADE_FLOORS = 4, ROWS_PER_FLOOR = 2;
 
   tm.fromCanvas("facade", 512, 1024, (ctx, w, h, random) => {
@@ -236,7 +181,6 @@ export function createAllTextures(tm) {
 
     for (let r = 0; r < FACADE_FLOORS * ROWS_PER_FLOOR; r++) {
       for (let c = 0; c < FACADE_COLS; c++) {
-        // Tiap panel sedikit beda terang (efek panel ACP/kaca reflektif)
         const base = 222 + Math.floor((random() - 0.5) * 18);
         const grad = ctx.createLinearGradient(0, r * rowH, 0, (r + 1) * rowH);
         grad.addColorStop(0, `rgb(${base + 8},${base + 10},${base + 12})`);
@@ -248,7 +192,6 @@ export function createAllTextures(tm) {
 
     noise(ctx, w, h, random, 14, 5000, 2);
 
-    // Garis sambungan panel (joint) abu gelap
     ctx.fillStyle = "rgb(120,124,130)";
 
     for (let c = 0; c <= FACADE_COLS; c++) {
@@ -256,12 +199,10 @@ export function createAllTextures(tm) {
     }
 
     for (let r = 0; r <= FACADE_FLOORS * ROWS_PER_FLOOR; r++) {
-      // Sambungan antar lantai sedikit lebih tebal
       const thick = r % ROWS_PER_FLOOR === 0 ? 7 : 4;
       ctx.fillRect(0, r * rowH - thick / 2, w, thick);
     }
 
-    // Baut/titik kecil di sudut panel (detail halus)
     ctx.fillStyle = "rgba(90,95,100,0.6)";
 
     for (let r = 0; r < FACADE_FLOORS * ROWS_PER_FLOOR; r++) {
@@ -272,9 +213,6 @@ export function createAllTextures(tm) {
     }
   }, 11);
 
-  // Emissive fasad (MALAM): sebagian panel bercahaya kuning seperti
-  // ruangan yang lampunya menyala. Hitam = tidak menyala.
-  // ASUMSI: tidak ada data malam dari survey.
   tm.fromCanvas("facadeEmissive", 512, 1024, (ctx, w, h, random) => {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
@@ -287,15 +225,12 @@ export function createAllTextures(tm) {
         if (random() < 0.45) {
           const warm = 150 + Math.floor(random() * 90);
           ctx.fillStyle = `rgb(${warm},${Math.floor(warm * 0.82)},${Math.floor(warm * 0.5)})`;
-          // Hanya baris bawah tiap lantai (setinggi jendela)
           ctx.fillRect(c * colW + 8, f * floorH + floorH * 0.5 + 6, colW - 16, floorH * 0.5 - 12);
         }
       }
     }
   }, 23);
 
-  // ---------------- Strip kaca biru ----------------------------------
-  // 1 tile = 1 lantai; mullion horizontal tiap setengah lantai.
   tm.fromCanvas("glass", 128, 256, (ctx, w, h, random) => {
     const grad = ctx.createLinearGradient(0, 0, w, h);
     grad.addColorStop(0, "#9fc2ea");
@@ -306,7 +241,6 @@ export function createAllTextures(tm) {
 
     noise(ctx, w, h, random, 10, 600, 2);
 
-    // Bingkai aluminium
     ctx.fillStyle = "#c9ced4";
     ctx.fillRect(0, 0, 8, h);
     ctx.fillRect(w - 8, 0, 8, h);
@@ -314,15 +248,11 @@ export function createAllTextures(tm) {
     ctx.fillRect(0, h / 2 - 3, w, 6);
   }, 5);
 
-  // ---------------- Pita atap "TOWER 1 ITS" --------------------------
-  // CATATAN: lambang dibuat sebagai emblem bulat SEDERHANA (bukan
-  // reproduksi logo resmi) — cukup untuk memberi kesan papan nama.
   function drawCrownSign(ctx, w, h, glow) {
     ctx.fillStyle = glow ? "#000" : "#25282c";
     ctx.fillRect(0, 0, w, h);
 
     if (!glow) {
-      // Sambungan panel pita atap
       ctx.fillStyle = "#1c1e21";
 
       for (let x = 0; x < w; x += 64) {
@@ -330,7 +260,6 @@ export function createAllTextures(tm) {
       }
     }
 
-    // Emblem bulat: cincin biru + isi kuning (posisi mirip foto)
     const cx = w * 0.555, cy = h * 0.5, r = h * 0.3;
     ctx.fillStyle = glow ? "#3b6fd6" : "#2d5fb8";
     ctx.beginPath();
@@ -340,8 +269,6 @@ export function createAllTextures(tm) {
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
     ctx.fill();
-
-    // Tulisan putih
     ctx.fillStyle = glow ? "#fff6dc" : "#f2f4f6";
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
@@ -351,7 +278,6 @@ export function createAllTextures(tm) {
   tm.fromCanvas("crownSign", 1024, 128, (ctx, w, h) => drawCrownSign(ctx, w, h, false));
   tm.fromCanvas("crownSignGlow", 1024, 128, (ctx, w, h) => drawCrownSign(ctx, w, h, true));
 
-  // ---------------- Tulisan "AKTUARIA" di louver bawah ----------------
   tm.fromCanvas("aktuariaSign", 512, 64, (ctx, w, h) => {
     ctx.fillStyle = "#e9e9e4";
     ctx.fillRect(0, 0, w, h);
@@ -361,14 +287,10 @@ export function createAllTextures(tm) {
     fitText(ctx, "AKTUARIA", w / 2, h / 2 + 2, w * 0.9, 44, "bold");
   });
 
-  // ---------------- Totem F-SCIENTICS (depan taman) -------------------
-  // Isi tulisan dari foto zoom-in-out: daftar departemen FSAD.
   tm.fromCanvas("totem", 256, 1024, (ctx, w, h) => {
-    // Bagian atas putih
     ctx.fillStyle = "#f4f6f5";
     ctx.fillRect(0, 0, w, h * 0.3);
 
-    // Kepala kecil: nama fakultas
     ctx.fillStyle = "#5f6b72";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
@@ -376,21 +298,17 @@ export function createAllTextures(tm) {
     fitText(ctx, "SAINS DAN", 26, h * 0.075, w * 0.7, 18, "normal");
     fitText(ctx, "ANALITIKA DATA", 26, h * 0.1, w * 0.7, 18, "normal");
 
-    // Tulisan utama
     ctx.fillStyle = "#26404c";
     ctx.textAlign = "center";
     fitText(ctx, "F-SCIENTICS", w / 2, h * 0.24, w * 0.86, 34, "bold");
 
-    // Garis hijau di tepi & batas
     ctx.fillStyle = "#3fae6a";
     ctx.fillRect(0, h * 0.3 - 6, w, 6);
     ctx.fillRect(0, 0, 10, h);
 
-    // Bagian bawah biru
     ctx.fillStyle = "#1f5aa8";
     ctx.fillRect(10, h * 0.3, w - 10, h * 0.7);
 
-    // Daftar departemen + panah
     const departments = [
       ["Fisika", "←"], ["Kimia", "←"], ["Matematika", "↑"],
       ["Statistika", "↑"], ["Biologi", "→"], ["Aktuaria", "↑"]
@@ -410,7 +328,6 @@ export function createAllTextures(tm) {
     });
   });
 
-  // ---------------- Dinding planter (granit gelap) --------------------
   tm.fromCanvas("planterWall", 256, 128, (ctx, w, h, random) => {
     ctx.fillStyle = "#2b2e30";
     ctx.fillRect(0, 0, w, h);
@@ -421,14 +338,13 @@ export function createAllTextures(tm) {
     for (let y = 0; y <= h; y += 64) ctx.fillRect(0, y - 1, w, 2);
   }, 7);
 
-  // ---------------- Paving herringbone (blok 20×10 cm) ----------------
-  // Pola herringbone 90°: strip "tangga" diagonal berisi bata horizontal
+  // Paving herringbone 90° (blok 20×10 cm): strip "tangga" diagonal berisi bata horizontal
   // (2×1) & vertikal (1×2) yang diulang tiap 4 unit ke atas.
   // 1 tile = 16×16 unit = 1.6 m × 1.6 m (dipakai uvScale di environment).
   tm.fromCanvas("paving", 512, 512, (ctx, w, h, random) => {
     const units = 16;
     const u = w / units;
-    ctx.fillStyle = "#5d6064"; // warna nat
+    ctx.fillStyle = "#5d6064";
     ctx.fillRect(0, 0, w, h);
 
     function brick(x, y, bw, bh) {
@@ -442,13 +358,13 @@ export function createAllTextures(tm) {
       }
     }
 
-    for (let s = -units; s < units; s += 4) {        // strip ke atas
-      for (let k = -units; k < units * 2; k++) {     // langkah diagonal
+    for (let s = -units; s < units; s += 4) {
+      for (let k = -units; k < units * 2; k++) {
         const x = k, y = k + s;
 
         if (x >= -2 && x < units + 2 && y >= -3 && y < units + 3) {
-          brick(x, y, 2, 1);       // bata horizontal
-          brick(x, y + 1, 1, 2);   // bata vertikal
+          brick(x, y, 2, 1);
+          brick(x, y + 1, 1, 2);
         }
       }
     }
@@ -456,7 +372,6 @@ export function createAllTextures(tm) {
     noise(ctx, w, h, random, 30, 9000, 2);
   }, 3);
 
-  // ---------------- Rumput ------------------------------------------
   tm.fromCanvas("grass", 256, 256, (ctx, w, h, random) => {
     ctx.fillStyle = "#4f8a35";
     ctx.fillRect(0, 0, w, h);
@@ -468,7 +383,6 @@ export function createAllTextures(tm) {
     }
   }, 9);
 
-  // ---------------- Kulit kayu ---------------------------------------
   tm.fromCanvas("bark", 128, 256, (ctx, w, h, random) => {
     ctx.fillStyle = "#6b5646";
     ctx.fillRect(0, 0, w, h);
@@ -483,7 +397,6 @@ export function createAllTextures(tm) {
     noise(ctx, w, h, random, 50, 1500, 3);
   }, 13);
 
-  // ---------------- Daun (gugus daun rimbun) --------------------------
   tm.fromCanvas("leaves", 256, 256, (ctx, w, h, random) => {
     ctx.fillStyle = "#2d5226";
     ctx.fillRect(0, 0, w, h);
@@ -498,7 +411,6 @@ export function createAllTextures(tm) {
     }
   }, 17);
 
-  // ---------------- Genteng (atap pos satpam & gedung lama) -----------
   tm.fromCanvas("roofTile", 128, 128, (ctx, w, h, random) => {
     ctx.fillStyle = "#a3482c";
     ctx.fillRect(0, 0, w, h);
@@ -517,11 +429,9 @@ export function createAllTextures(tm) {
     noise(ctx, w, h, random, 40, 800, 2);
   }, 19);
 
-  // ---------------- Dinding pos satpam (putih + jendela) ---------------
   tm.fromCanvas("gazeboWall", 256, 256, (ctx, w, h) => {
     ctx.fillStyle = "#eeeeea";
     ctx.fillRect(0, 0, w, h);
-    // Jendela kaca gelap dengan kusen
     ctx.fillStyle = "#3a4a57";
     ctx.fillRect(w * 0.15, h * 0.12, w * 0.7, h * 0.5);
     ctx.fillStyle = "#d8d8d2";
@@ -530,7 +440,6 @@ export function createAllTextures(tm) {
     ctx.fillRect(0, h * 0.85, w, h * 0.15);
   });
 
-  // ---------------- Gedung lama (krem + jendela gelap) ----------------
   tm.fromCanvas("oldFacade", 128, 128, (ctx, w, h, random) => {
     ctx.fillStyle = "#d9d2c3";
     ctx.fillRect(0, 0, w, h);
@@ -541,7 +450,6 @@ export function createAllTextures(tm) {
     ctx.fillRect(0, h * 0.78, w, h * 0.08);
   }, 29);
 
-  // ---------------- Gedung rendah kiri (putih + pita kaca biru) --------
   tm.fromCanvas("lowFacade", 128, 128, (ctx, w, h) => {
     ctx.fillStyle = "#eef1f3";
     ctx.fillRect(0, 0, w, h);
@@ -551,7 +459,7 @@ export function createAllTextures(tm) {
     ctx.fillRect(w * 0.48, h * 0.2, w * 0.04, h * 0.38);
   });
 
-  // ---------------- Gedung parkir KPA 2 -------------------------------
+  // Gedung parkir KPA 2
   // 1 tile = 1 lantai parkir: pelat abu + bukaan gelap + railing biru.
   tm.fromCanvas("kpaFacade", 256, 128, (ctx, w, h, random) => {
     ctx.fillStyle = "#8c9196";
@@ -561,11 +469,11 @@ export function createAllTextures(tm) {
     ctx.fillStyle = "#7c8187";
 
     for (let x = 0; x < w; x += 64) {
-      ctx.fillRect(x, h * 0.25, 8, h * 0.55);   // kolom
+      ctx.fillRect(x, h * 0.25, 8, h * 0.55);
     }
 
     ctx.fillStyle = "#2f5fa0";
-    ctx.fillRect(0, h * 0.72, w, h * 0.06);     // railing biru
+    ctx.fillRect(0, h * 0.72, w, h * 0.06);
     noise(ctx, w, h, random, 20, 600, 2);
   }, 31);
 
@@ -590,7 +498,6 @@ export function createAllTextures(tm) {
     fitText(ctx, "06.00 – 22.00", w / 2, h * 0.8, w * 0.85, 18, "normal");
   });
 
-  // ---------------- Strip kuning-hitam (palang & tiang) ---------------
   tm.fromCanvas("hazard", 64, 64, (ctx, w, h) => {
     ctx.fillStyle = "#f2c80f";
     ctx.fillRect(0, 0, w, h);
@@ -598,7 +505,6 @@ export function createAllTextures(tm) {
     ctx.fillRect(0, 0, w / 2, h);
   });
 
-  // ---------------- Kerb beton & aspal marka ------------------------
   tm.fromCanvas("concrete", 128, 128, (ctx, w, h, random) => {
     ctx.fillStyle = "#8d8f90";
     ctx.fillRect(0, 0, w, h);
@@ -609,7 +515,6 @@ export function createAllTextures(tm) {
     ctx.fillStyle = "#cfd0cc";
     ctx.fillRect(0, 0, w, h);
 
-    // Cat marka putih yang terkelupas (lihat foto stop-motion-tilt)
     for (let i = 0; i < 500; i++) {
       const g = 100 + Math.floor(random() * 40);
       ctx.fillStyle = `rgba(${g},${g + 2},${g + 6},${0.4 + random() * 0.5})`;

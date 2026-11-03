@@ -1,19 +1,3 @@
-// =====================================================================
-// environment.js — Tanah, langit, matahari, awan, tiang listrik
-// =====================================================================
-// Hierarki:
-//   Lingkungan
-//   ├─ Tanah
-//   │   ├─ Paving Plaza (herringbone)
-//   │   ├─ Rumput (beberapa petak)
-//   │   └─ Marka Cat Pudar
-//   ├─ Langit (sky dome, digambar dengan shader khusus)
-//   ├─ Pivot Matahari  (ROTASI: orbit sesuai jam)
-//   │   └─ Matahari    (SKALA: glow berdenyut)
-//   ├─ Grup Awan
-//   │   └─ Awan i (TRANSLASI) → Gumpalan j
-//   └─ Tiang Listrik → Palang → Kabel i → Segmen j
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Node, createMaterial } from "./scene-graph.js";
@@ -25,13 +9,10 @@ const E = CONFIG.environment;
 export function createEnvironment({ gl, tm, lighting }) {
   const root = new Node("Lingkungan");
 
-  // ------------------------------------------------------------------
   // TANAH
-  // ------------------------------------------------------------------
   const ground = root.add(new Node("Tanah"));
   const size = E.groundSize;
 
-  // Paving: 1 tile texture = 1.6 m → diulang size/1.6 kali (wrap REPEAT)
   ground.add(new Node("Paving Plaza", {
     mesh: getMesh(gl, "ground", () => createPlane(size, size, size / 1.6, size / 1.6)),
     material: createMaterial({
@@ -44,7 +25,7 @@ export function createEnvironment({ gl, tm, lighting }) {
     castShadow: false
   }));
 
-  // Petak rumput (y sedikit di atas paving agar tidak z-fighting)
+
   const grassMaterial = createMaterial({
     name: "rumput",
     color: [0.85, 0.9, 0.8],
@@ -54,13 +35,12 @@ export function createEnvironment({ gl, tm, lighting }) {
     shininess: 4
   });
 
-  // [x, z, lebar, panjang] — area hijau di samping & belakang gedung
   const grassPatches = [
-    [-15, -2, 10, 22],    // kiri gedung (bawah louver)
-    [17, 4, 12, 14],      // kanan gedung
-    [0, -24, 70, 18],     // belakang
-    [26, 22, 14, 14],     // sekitar pohon rindang kanan
-    [-25, 20, 7, 7]       // pohon depan KPA 2
+    [-15, -2, 10, 22],    
+    [17, 4, 12, 14],      
+    [0, -24, 70, 18],     
+    [26, 22, 14, 14],     
+    [-25, 20, 7, 7]       
   ];
 
   grassPatches.forEach(([x, z, w, d], i) => {
@@ -72,7 +52,6 @@ export function createEnvironment({ gl, tm, lighting }) {
     }));
   });
 
-  // Marka cat putih pudar di paving (lihat foto stop-motion-tilt 1-4)
   ground.add(new Node("Marka Cat Pudar", {
     position: [-27.5, 0.03, 49],
     rotation: [0, 20, 0],
@@ -81,21 +60,14 @@ export function createEnvironment({ gl, tm, lighting }) {
     castShadow: false
   }));
 
-  // ------------------------------------------------------------------
-  // LANGIT — node penanda; digambar terpisah oleh program SKY (main.js)
-  // ------------------------------------------------------------------
+  // LANGIT
   root.add(new Node("Langit (sky dome)", {
     mesh: getMesh(gl, "skyDome", () => createSphere(16, 24)),
     userData: { skyDome: true },
     castShadow: false
   }));
 
-  // ------------------------------------------------------------------
-  // MATAHARI — hierarki pivot (ROTASI) → bola matahari
-  // ------------------------------------------------------------------
-  // Pivot ada di pusat scene. Rotasi Y menentukan arah terbit (timur),
-  // rotasi Z menentukan ketinggian sesuai jam (dihitung lighting.js).
-  // Karena Matahari adalah ANAK pivot, memutar pivot = matahari mengorbit.
+  // MATAHARI
   const sunPivot = root.add(new Node("Pivot Matahari", {
     onUpdate: (node) => {
       node.rotation = [0, E.sunYawDeg, lighting.sunAngle];
@@ -111,18 +83,15 @@ export function createEnvironment({ gl, tm, lighting }) {
     material: sunMaterial,
     castShadow: false,
     onUpdate: (node, dt, time) => {
-      // SKALA: glow matahari berdenyut halus (±6%)
+      // SKALA
       const pulse = 1 + 0.06 * Math.sin(time * 2.0);
       node.scale = [pulse, pulse, pulse];
       node.material.color = Vec3.scale(lighting.sunGlowColor, 1.25);
-      // Sembunyikan bila sudah di bawah horizon
       node.visible = lighting.sunElevation > -0.06;
     }
   }));
 
-  // ------------------------------------------------------------------
-  // AWAN — TRANSLASI pelan, muncul lagi dari sisi lain (wrap-around)
-  // ------------------------------------------------------------------
+  // AWAN
   const clouds = root.add(new Node("Grup Awan"));
   const random = createRandom(2026);
   const cloudMaterial = createMaterial({
@@ -166,9 +135,7 @@ export function createEnvironment({ gl, tm, lighting }) {
     }
   }
 
-  // ------------------------------------------------------------------
-  // TIANG LISTRIK + KABEL (kabel melintang di kiri atas foto)
-  // ------------------------------------------------------------------
+  // TIANG LISTRIK + KABEL
   const poleMaterial = createMaterial({ name: "tiang", color: [0.42, 0.43, 0.45], specular: 0.2 });
   const cableMaterial = createMaterial({ name: "kabel", color: [0.08, 0.08, 0.09], specular: 0.1 });
   const pole = root.add(new Node("Tiang Listrik", {
@@ -186,7 +153,6 @@ export function createEnvironment({ gl, tm, lighting }) {
   }));
 
   // Kabel melengkung (catenary sederhana) dari tiang ke luar layar
-  // kiri-belakang kamera; disusun dari segmen kubus tipis.
   const cableEnd = CONFIG.props.cableEnd;
   const segments = 10;
 
@@ -200,7 +166,7 @@ export function createEnvironment({ gl, tm, lighting }) {
 
     for (let s = 1; s <= segments; s++) {
       const t = s / segments;
-      const sag = Math.sin(t * Math.PI) * (3.5 + c * 0.4); // kendur di tengah
+      const sag = Math.sin(t * Math.PI) * (3.5 + c * 0.4); 
       const point = [
         start[0] + (end[0] - start[0]) * t,
         start[1] + (end[1] - start[1]) * t - sag,
@@ -214,8 +180,6 @@ export function createEnvironment({ gl, tm, lighting }) {
   return root;
 }
 
-// Membuat kubus tipis yang menghubungkan titik a → b (untuk kabel/tangga).
-// Rotasi dihitung dari arah a→b: yaw (Y) lalu pitch (X).
 export function segmentBetween(gl, name, a, b, thickness, material) {
   const d = Vec3.subtract(b, a);
   const length = Vec3.length(d);

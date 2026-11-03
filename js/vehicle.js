@@ -1,19 +1,3 @@
-// =====================================================================
-// vehicle.js — Motor yang lewat (Anggota B)
-// ---------------------------------------------------------------------
-// Banyak motor (termasuk ojol berjaket hijau) terlihat di video.
-//
-// Hierarki satu motor:
-//   Motor (TRANSLASI di jalur + ROTASI Y menghadap arah)
-//   ├─ Rangka Motor → Jok ; Spakbor Belakang ; Lampu Belakang
-//   ├─ Garpu Depan (miring) → Stang ; Lampu Depan
-//   │   └─ Poros Roda Depan (ROTASI: roda berputar) → Ban ; Velg ; Jari-jari
-//   ├─ Poros Roda Belakang (ROTASI) → Ban ; Velg ; Jari-jari
-//   └─ Pengendara (model mahasiswa pose duduk + helm)
-//
-// Putaran roda dihitung dari jarak tempuh:  sudut = jarak / jari-jari
-// (dalam radian) → roda tidak "selip" terhadap kecepatan motor.
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Node, createMaterial } from "./scene-graph.js";
@@ -27,7 +11,6 @@ const WHEEL_RADIUS = 0.3;
 function createWheel(gl, name, position, materials) {
   const axle = new Node(name, { position });
 
-  // Silinder berdiri (sumbu Y) diputar 90° di Z → sumbu roda = X
   axle.add(new Node("Ban", {
     rotation: [0, 0, 90],
     mesh: Meshes.cylinder(gl),
@@ -44,7 +27,6 @@ function createWheel(gl, name, position, materials) {
     material: materials.rim
   }));
 
-  // Jari-jari: dua batang bersilang agar putaran roda TERLIHAT
   for (let k = 0; k < 2; k++) {
     axle.add(new Node(`Jari-jari ${k + 1}`, {
       rotation: [k * 90, 0, 0],
@@ -98,10 +80,9 @@ function createMotorcycle(gl, index, bodyColor, riderLook) {
     castShadow: false
   }));
 
-  // Garpu depan miring 20° (rake) — roda depan adalah ANAK garpu
   const fork = motor.add(new Node("Garpu Depan", {
     position: [0, 0.95, 0.55],
-    rotation: [-20, 0, 0],   // negatif → ujung bawah garpu condong ke depan
+    rotation: [-20, 0, 0],  
     mesh: Meshes.cube(gl),
     meshScale: [0.08, 0.7, 0.08],
     meshOffset: [0, -0.35, 0],
@@ -124,11 +105,10 @@ function createMotorcycle(gl, index, bodyColor, riderLook) {
   }));
 
   const front = fork.add(createWheel(gl, "Poros Roda Depan", [0, -0.68, 0], m));
-  front.rotation = [20, 0, 0]; // batalkan kemiringan garpu agar roda tegak
+  front.rotation = [20, 0, 0];
 
   const rear = motor.add(createWheel(gl, "Poros Roda Belakang", [0, WHEEL_RADIUS, -0.55], m));
 
-  // Pengendara (pose duduk). Disimpan untuk animasi bila perlu.
   const rider = createPersonModel(gl, "Pengendara", riderLook);
   rider.root.position = [0, 0.02, -0.25];
   applySeatedPose(rider.joints);
@@ -138,10 +118,6 @@ function createMotorcycle(gl, index, bodyColor, riderLook) {
   return motor;
 }
 
-// --------------------------------------------------------------------
-// Semua motor + logika jalur. `world.vehiclePositions` dibaca props.js
-// (palang parkir terbuka bila ada motor mendekat).
-// --------------------------------------------------------------------
 export function createVehicles({ gl, world }) {
   const group = new Node("Kendaraan");
   world.vehiclePositions = [];
@@ -163,13 +139,11 @@ export function createVehicles({ gl, world }) {
     motor.userData.angle = (i / V.loopCount) * Math.PI * 2 + 0.6;
     motor.onUpdate = (node, dt) => {
       const d = node.userData;
-      // Kecepatan sudut ≈ kecepatan linear / keliling × 2π
       d.angle += (V.loopSpeed / circumference) * Math.PI * 2 * dt;
 
       const a = d.angle;
       node.position = [cx + Math.cos(a) * rx, 0, cz + Math.sin(a) * rz];
 
-      // Arah = turunan posisi terhadap sudut
       const tangent = [-Math.sin(a) * rx, 0, Math.cos(a) * rz];
       node.rotation[1] = Math.atan2(tangent[0], tangent[2]) * 180 / Math.PI;
 
@@ -180,7 +154,6 @@ export function createVehicles({ gl, world }) {
     group.add(motor);
   }
 
-  // ---- Motor yang lewat palang parkir kiri (bolak-balik) ----
   const gateIndex = V.loopCount;
   const gateMotor = createMotorcycle(gl, gateIndex, V.bodyColors[2], riders[2]);
   const [start, end] = V.gatePath;
@@ -194,7 +167,6 @@ export function createVehicles({ gl, world }) {
   gateMotor.onUpdate = (node, dt) => {
     const d = node.userData;
 
-    // Berhenti sebentar di ujung jalur, lalu putar balik
     if (d.wait > 0) {
       d.wait -= dt;
       return;
@@ -223,7 +195,7 @@ export function createVehicles({ gl, world }) {
   return group;
 }
 
-// ROTASI roda: sudut (derajat) bertambah sesuai jarak / jari-jari
+// ROTASI roda
 function spinWheels(node, distance) {
   const deltaDeg = (distance / WHEEL_RADIUS) * 180 / Math.PI;
 

@@ -1,25 +1,3 @@
-// =====================================================================
-// student.js — Mahasiswa low-poly + animasi berjalan (Anggota B)
-// ---------------------------------------------------------------------
-// Hierarki satu mahasiswa (contoh paling jelas dari hierarchical model):
-//
-//   Mahasiswa (TRANSLASI di jalur + ROTASI Y menghadap arah jalan)
-//   └─ Pinggul (naik-turun sedikit saat melangkah)
-//       ├─ Torso
-//       │   ├─ Kepala → Rambut / Hijab
-//       │   ├─ Lengan Atas Kiri  (ROTASI di bahu) → Lengan Bawah Kiri  → Tangan
-//       │   ├─ Lengan Atas Kanan (ROTASI di bahu) → Lengan Bawah Kanan → Tangan
-//       │   └─ Tas
-//       ├─ Paha Kiri  (ROTASI di pinggul) → Betis Kiri  (ROTASI lutut) → Sepatu
-//       └─ Paha Kanan (ROTASI di pinggul) → Betis Kanan (ROTASI lutut) → Sepatu
-//
-// Gerak jalan natural: kaki kiri & kanan berlawanan fase, lengan
-// berlawanan dengan kaki di sisi yang sama, lutut menekuk saat kaki
-// diayun ke belakang, badan naik-turun 2× per siklus langkah.
-//
-// Konvensi: wajah menghadap +Z lokal. Rotasi X positif mengayun
-// tungkai ke BELAKANG (−Z).
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Node, createMaterial } from "./scene-graph.js";
@@ -33,9 +11,7 @@ function mat(name, color, specular = 0.08) {
   return createMaterial({ name, color, specular, shininess: 10 });
 }
 
-// --------------------------------------------------------------------
 // MODEL — dipakai juga oleh vehicle.js untuk pengendara motor
-// --------------------------------------------------------------------
 export function createPersonModel(gl, name, look) {
   const skin = mat("kulit", look.skin);
   const shirt = mat("baju", look.shirt);
@@ -48,7 +24,6 @@ export function createPersonModel(gl, name, look) {
 
   const root = new Node(name);
 
-  // Pinggul pada ketinggian ±0.86 m (panjang tungkai)
   const hips = root.add(new Node("Pinggul", {
     position: [0, 0.86, 0],
     mesh: cube,
@@ -61,7 +36,7 @@ export function createPersonModel(gl, name, look) {
     position: [0, 0.05, 0],
     mesh: cube,
     meshScale: [0.36, 0.56, 0.21],
-    meshOffset: [0, 0.28, 0],     // pivot di pinggang, kubus di atasnya
+    meshOffset: [0, 0.28, 0],     
     material: shirt
   }));
   joints.torso = torso;
@@ -81,7 +56,6 @@ export function createPersonModel(gl, name, look) {
       material: mat("helm", look.helmetColor || [0.85, 0.85, 0.85], 0.6)
     }));
   } else if (look.hijab) {
-    // Hijab: penutup kepala + bagian yang menjuntai ke bahu
     const hijabMat = mat("hijab", look.hijabColor);
     head.add(new Node("Hijab", {
       position: [0, 0.015, -0.01],
@@ -105,7 +79,7 @@ export function createPersonModel(gl, name, look) {
     }));
   }
 
-  // ---- Lengan (pivot di bahu) ----
+  // Lengan (pivot di bahu)
   for (const side of ["Kiri", "Kanan"]) {
     const sx = side === "Kiri" ? -1 : 1;
 
@@ -145,7 +119,7 @@ export function createPersonModel(gl, name, look) {
     }));
   }
 
-  // ---- Tungkai (pivot di sendi pinggul) ----
+  // Tungkai (pivot di sendi pinggul)
   for (const side of ["Kiri", "Kanan"]) {
     const sx = side === "Kiri" ? -1 : 1;
 
@@ -179,11 +153,7 @@ export function createPersonModel(gl, name, look) {
   return { root, joints };
 }
 
-// --------------------------------------------------------------------
 // POSE
-// --------------------------------------------------------------------
-
-// Siklus berjalan. phase dalam radian; amplitude dalam derajat.
 export function applyWalkPose(joints, phase, amplitude = 28) {
   const swing = Math.sin(phase);
 
@@ -214,7 +184,7 @@ export function applyIdlePose(joints, time, phase) {
   joints.shinKiri.rotation[0] = 0;
   joints.shinKanan.rotation[0] = 0;
   joints.upperArmKiri.rotation[0] = 3 * breathe;
-  joints.upperArmKanan.rotation = [-35, 0, -10];  // tangan memegang HP
+  joints.upperArmKanan.rotation = [-35, 0, -10]; 
   joints.lowerArmKanan.rotation[0] = -60;
   joints.hips.position[1] = 0.86;
   joints.torso.rotation[1] = 6 * Math.sin(time * 0.4 + phase);
@@ -234,9 +204,7 @@ export function applySeatedPose(joints) {
   joints.torso.rotation[0] = 8;
 }
 
-// --------------------------------------------------------------------
 // JALUR: posisi & arah pada polyline berdasarkan jarak tempuh
-// --------------------------------------------------------------------
 function pathLength(path) {
   let total = 0;
 
@@ -273,9 +241,7 @@ function turnTowards(current, target, k) {
   return current + diff * k;
 }
 
-// --------------------------------------------------------------------
 // Semua mahasiswa
-// --------------------------------------------------------------------
 export function createStudents({ gl }) {
   const group = new Node("Mahasiswa");
   const random = createRandom(4242);
@@ -295,7 +261,6 @@ export function createStudents({ gl }) {
 
     const { root, joints } = createPersonModel(gl, `Mahasiswa ${i + 1}`, look);
 
-    // Dua mahasiswa terakhir berdiri di dekat taman (seperti di video)
     const idle = i >= S.count - 2;
     const path = S.paths[i % S.paths.length];
     const length = pathLength(path);
@@ -306,9 +271,9 @@ export function createStudents({ gl }) {
       path,
       length,
       distance: random() * length,
-      direction: random() < 0.5 ? 1 : -1,     // bolak-balik
+      direction: random() < 0.5 ? 1 : -1,    
       speed: S.walkSpeed[0] + random() * (S.walkSpeed[1] - S.walkSpeed[0]),
-      lateral: (random() - 0.5) * 1.6,          // geser kiri-kanan dari garis jalur
+      lateral: (random() - 0.5) * 1.6,      
       phase: random() * Math.PI * 2,
       heading: 0
     };
@@ -333,7 +298,7 @@ function updateStudent(node, dt, time) {
     return;
   }
 
-  // ---- TRANSLASI sepanjang jalur (bolak-balik) ----
+  // TRANSLASI sepanjang jalur (bolak-balik)
   d.distance += d.speed * d.direction * dt;
 
   if (d.distance > d.length) {
@@ -346,16 +311,15 @@ function updateStudent(node, dt, time) {
 
   const sample = samplePath(d.path, d.distance);
   const forward = Vec3.scale(sample.direction, d.direction);
-  const side = [forward[2], 0, -forward[0]];   // tegak lurus arah jalan
+  const side = [forward[2], 0, -forward[0]]; 
   node.position = Vec3.add(sample.position, Vec3.scale(side, d.lateral));
 
-  // ---- ROTASI Y: menghadap arah jalan (berbalik dengan halus) ----
+  // ROTASI Y: menghadap arah jalan (berbalik dengan halus)
   const targetHeading = Math.atan2(forward[0], forward[2]) * 180 / Math.PI;
   d.heading = turnTowards(d.heading, targetHeading, 1 - Math.exp(-6 * dt));
   node.rotation[1] = d.heading;
 
-  // ---- Ayunan tangan & kaki ----
-  // 1 siklus langkah ≈ 1.4 m → kecepatan fase sebanding kecepatan jalan
+  // Ayunan tangan & kaki
   d.phase += (d.speed / 1.4) * Math.PI * 2 * dt;
   applyWalkPose(d.joints, d.phase, lerp(24, 32, (d.speed - 1) / 0.6));
 }

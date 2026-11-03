@@ -1,14 +1,3 @@
-// =====================================================================
-// props.js — Taman depan, totem F-SCIENTICS, palang parkir, pos satpam,
-//            lampu taman, tempat sampah (Anggota B)
-// ---------------------------------------------------------------------
-// Disesuaikan dengan FOTO ASLI (bukan deskripsi awal master prompt):
-//   - Totem biru "F-SCIENTICS" berisi daftar departemen FSAD
-//   - Planter berbingkai hijau tosca dengan dinding granit gelap
-//   - Semak kuning, tanaman ungu, palem kecil, tanaman berdaun runcing
-//   - Palang parkir kuning-hitam (kiri tertutup, kanan terangkat + bendera)
-//   - Pos satpam kecil beratap limas genteng merah
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Node, createMaterial } from "./scene-graph.js";
@@ -31,7 +20,6 @@ export function createProps({ gl, tm, lighting, world }) {
   return group;
 }
 
-// =====================================================================
 // TAMAN DEPAN
 //   Taman Depan
 //   ├─ Dinding Planter → Bingkai Tosca (Atas, Kiri, Kanan)
@@ -41,12 +29,12 @@ export function createProps({ gl, tm, lighting, world }) {
 //   ├─ Tanaman Ungu i
 //   ├─ Palem Kecil → Batang Palem → Pelepah i (bergoyang)
 //   └─ Tanaman Runcing i → Bilah Daun j (SKALA bergoyang)
-// =====================================================================
+
 function createGarden(gl, tm, lighting) {
   const garden = new Node("Taman Depan", { position: [...G.center] });
   const random = createRandom(55);
 
-  // ---------------- Dinding planter + bingkai tosca -----------------
+  // Dinding planter + bingkai tosca
   const tosca = createMaterial({ name: "tosca", color: [0.45, 0.82, 0.7], specular: 0.35, shininess: 24 });
   const wall = garden.add(new Node("Dinding Planter", {
     position: [0, G.wallHeight / 2, 0],
@@ -70,7 +58,7 @@ function createGarden(gl, tm, lighting) {
     }));
   }
 
-  // ---------------- Rumput & kerb setengah elips --------------------
+  // Rumput & kerb setengah elips
   garden.add(new Node("Rumput Taman", {
     position: [0, 0.12, 0.25],
     mesh: getMesh(gl, "gardenDisc", () => createEllipseDisc(40, 0, Math.PI)),
@@ -85,7 +73,7 @@ function createGarden(gl, tm, lighting) {
     material: createMaterial({ name: "kerb", color: [0.75, 0.75, 0.74], texture: tm.get("concrete"), specular: 0.05 })
   }));
 
-  // ---------------- Totem F-SCIENTICS -------------------------------
+  // Totem F-SCIENTICS
   const [tw, th, td] = G.totemSize;
   const totemOffset = Vec3.subtract(G.totemPosition, G.center);
   const blue = createMaterial({ name: "biru totem", color: [0.13, 0.36, 0.68], specular: 0.4, shininess: 32 });
@@ -101,7 +89,7 @@ function createGarden(gl, tm, lighting) {
     texture: tm.get("totem"),
     specular: 0.35,
     shininess: 32,
-    nightEmissive: [0.55, 0.6, 0.7]     // papan menyala (backlit) saat malam
+    nightEmissive: [0.55, 0.6, 0.7]    
   });
 
   totem.add(new Node("Papan Depan", {
@@ -128,9 +116,9 @@ function createGarden(gl, tm, lighting) {
     material: createMaterial({ name: "hijau totem", color: [0.25, 0.68, 0.42], specular: 0.3 })
   }));
 
-  // ---------------- Semak kuning (bunga/daun kuning) -----------------
+  // Semak kuning
   const yellow = createMaterial({ name: "semak kuning", color: [0.95, 0.95, 0.75], texture: tm.get("leaves"), uvScale: [2, 2], specular: 0.1 });
-  yellow.color = [2.4, 2.1, 0.55];   // texture daun hijau dikalikan → kuning-hijau
+  yellow.color = [2.4, 2.1, 0.55]; 
   const shrubSpots = [[-1.2, 2.3], [2.6, 2.2], [5.0, 1.4], [-4.5, 1.6]];
 
   shrubSpots.forEach(([x, z], i) => {
@@ -147,7 +135,7 @@ function createGarden(gl, tm, lighting) {
     }
   });
 
-  // ---------------- Tanaman ungu rendah di tepi depan -----------------
+  // Tanaman ungu rendah di tepi depan
   const purple = createMaterial({ name: "tanaman ungu", color: [0.42, 0.22, 0.42], specular: 0.1 });
 
   for (let i = 0; i < 7; i++) {
@@ -160,11 +148,11 @@ function createGarden(gl, tm, lighting) {
     }));
   }
 
-  // ---------------- Palem kecil (kiri totem) -------------------------
+  // Palem kecil
   garden.add(createPalm(gl, tm, [-5.0, 0.1, -1.2], 3.4));
   garden.add(createPalm(gl, tm, [-6.6, 0.1, 1.0], 2.4));
 
-  // ---------------- Tanaman berdaun runcing (dekat dinding) ----------
+  // Tanaman berdaun runcing
   const spiky = createMaterial({ name: "daun runcing", color: [0.35, 0.55, 0.3], specular: 0.15 });
 
   [[-3.0, 0.8], [0.8, 0.9], [6.2, 0.7], [-6.8, 0.6]].forEach(([x, z], i) => {
@@ -172,7 +160,7 @@ function createGarden(gl, tm, lighting) {
     const plant = garden.add(new Node(`Tanaman Runcing ${i + 1}`, {
       position: [x, 0.12, z],
       onUpdate: (node, dt, time) => {
-        // SKALA: bergoyang kecil (mengembang-mengempis)
+        // SKALA: bergoyang kecil
         const s = 1 + 0.04 * Math.sin(time * 2.2 + phase);
         node.scale = [s, 1 + 0.03 * Math.cos(time * 2.0 + phase), s];
       }
@@ -191,7 +179,7 @@ function createGarden(gl, tm, lighting) {
   return garden;
 }
 
-// Palem: batang miring sedikit → pelepah (kerucut pipih) yang bergoyang
+// Palem: batang miring sedikit
 function createPalm(gl, tm, position, height) {
   const phase = position[0] * 1.7;
   const palm = new Node("Palem Kecil", { position });
@@ -224,13 +212,6 @@ function createPalm(gl, tm, position, height) {
   return palm;
 }
 
-// =====================================================================
-// PALANG PARKIR (boom gate) kuning-hitam
-//   Palang Parkir → Tiang Palang → Pivot Lengan (ROTASI) → Lengan Palang
-//                                                         → Bendera Kuning
-//                → Tiang Pembatas i
-// Palang kiri TERBUKA otomatis bila motor mendekat (lihat vehicle.js).
-// =====================================================================
 function createBoomGate(gl, tm, name, cfg, raised, world) {
   const hazard = createMaterial({ name: "kuning-hitam", color: [1, 1, 1], texture: tm.get("hazard"), uvScale: [1, 1], specular: 0.3 });
   const hazardArm = createMaterial({ name: "lengan palang", color: [1, 1, 1], texture: tm.get("hazard"), uvScale: [cfg.length * 1.5, 1], specular: 0.3 });
@@ -251,12 +232,10 @@ function createBoomGate(gl, tm, name, cfg, raised, world) {
     userData: { angle: closedAngle },
     onUpdate: (node, dt, time) => {
       if (raised) {
-        // Palang kanan: terangkat, sedikit bergetar
         node.rotation[2] = closedAngle + 1.5 * Math.sin(time * 1.5);
         return;
       }
 
-      // Palang kiri: buka (80°) bila ada motor dalam radius 7 m
       const gatePos = gate.position;
       const near = (world.vehiclePositions || []).some((p) =>
         p && Math.hypot(p[0] - (gatePos[0] + cfg.length / 2), p[2] - gatePos[2]) < 7);
@@ -266,7 +245,7 @@ function createBoomGate(gl, tm, name, cfg, raised, world) {
     }
   }));
 
-  // Lengan: kubus panjang dengan pivot di ujung (meshOffset setengah panjang)
+  // Lengan
   const arm = pivot.add(new Node("Lengan Palang", {
     mesh: Meshes.cube(gl),
     meshScale: [cfg.length, 0.1, 0.1],
@@ -288,7 +267,6 @@ function createBoomGate(gl, tm, name, cfg, raised, world) {
     }));
   }
 
-  // Tiang-tiang pembatas kuning-hitam pendek di sepanjang palang
   for (let i = 1; i <= 3; i++) {
     gate.add(new Node(`Tiang Pembatas ${i}`, {
       position: [i * (cfg.length / 3), 0.45, -0.8],
@@ -301,11 +279,8 @@ function createBoomGate(gl, tm, name, cfg, raised, world) {
   return gate;
 }
 
-// =====================================================================
-// POS SATPAM (gazebo kecil beratap limas)
-//   Pos Satpam → Lantai Pos → Dinding Pos → Atap Limas → Puncak Atap
-//                            → Lampu Pos (point light)
-// =====================================================================
+
+// POS SATPAM 
 function createGuardPost(gl, tm, lighting) {
   const post = new Node("Pos Satpam", { position: [...P.gazeboPosition], rotation: [0, -15, 0] });
 
@@ -336,7 +311,6 @@ function createGuardPost(gl, tm, lighting) {
     material: createMaterial({ name: "puncak", color: [0.85, 0.85, 0.82], specular: 0.3 })
   }));
 
-  // Lampu di bawah atap pos (point light malam)
   const lampWorld = Vec3.add(P.gazeboPosition, [0, 2.8, 2.1]);
   walls.add(new Node("Lampu Pos", {
     position: [0, 1.0, 1.75],
@@ -350,9 +324,9 @@ function createGuardPost(gl, tm, lighting) {
   return post;
 }
 
-// =====================================================================
-// LAMPU TAMAN (point light) — Tiang → Kepala Lampu
-// =====================================================================
+
+// LAMPU TAMAN 
+
 function createLamps(gl, lighting) {
   const lamps = new Node("Lampu Taman");
   const poleMat = createMaterial({ name: "tiang lampu", color: [0.15, 0.16, 0.18], specular: 0.5, shininess: 32 });
@@ -381,7 +355,6 @@ function createLamps(gl, lighting) {
   return lamps;
 }
 
-// Tempat sampah biru (terlihat di sisi kanan foto)
 function createBins(gl) {
   const bins = new Node("Tempat Sampah");
   const blue = createMaterial({ name: "biru sampah", color: [0.12, 0.35, 0.75], specular: 0.5, shininess: 32 });

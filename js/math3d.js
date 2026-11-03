@@ -1,15 +1,3 @@
-// =====================================================================
-// math3d.js — Helper vektor & matrix 4x4
-// ---------------------------------------------------------------------
-// Gaya penulisan SAMA dengan math3d.js Praktikum 4 & 5:
-//   - Matrix disimpan COLUMN-MAJOR di Float32Array(16)
-//     (elemen [12],[13],[14] = translasi), sesuai format yang diminta
-//     gl.uniformMatrix4fv(..., false, m).
-//   - Mat4.multiply(a, b) menghasilkan a × b. Karena column-major,
-//     titik ditransformasi dari KANAN: p' = a × b × p (b dulu, lalu a).
-// Tambahan dibanding praktikum: translation, rotationZ, orthographic,
-// beberapa fungsi Vec3, dan transformPoint (dipakai shadow & kamera).
-// =====================================================================
 
 export function degToRad(degrees) {
   return degrees * Math.PI / 180;
@@ -19,8 +7,6 @@ export function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-// Interpolasi linear: t=0 → a, t=1 → b. Dipakai untuk smoothing kamera
-// dan transisi warna langit/cahaya.
 export function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -133,7 +119,6 @@ export const Mat4 = {
     ]);
   },
 
-  // result = a * b  (column-major, sama persis dengan Praktikum 5)
   multiply(a, b) {
     const out = new Float32Array(16);
 
@@ -152,8 +137,6 @@ export const Mat4 = {
     return out;
   },
 
-  // Mengalikan matrix dengan titik (w = 1). Dipakai misalnya untuk
-  // mengambil posisi dunia matahari dari matrix dunianya.
   transformPoint(m, p) {
     const x = p[0], y = p[1], z = p[2];
     const w = m[3] * x + m[7] * y + m[11] * z + m[15] || 1;
@@ -165,9 +148,7 @@ export const Mat4 = {
     ];
   },
 
-  // View matrix (sama dengan Praktikum 5): basis kamera
-  //   z = arah DARI target KE mata (kamera melihat ke -z)
-  //   x = up × z  (kanan),  y = z × x (atas yang sudah dikoreksi)
+
   lookAt(eye, target, up) {
     let zx = eye[0] - target[0];
     let zy = eye[1] - target[1];
@@ -210,8 +191,7 @@ export const Mat4 = {
     ]);
   },
 
-  // Sama dengan Praktikum 4. Dipakai untuk toggle orthographic DAN
-  // untuk kamera "cahaya matahari" saat membuat shadow map.
+
   orthographic(left, right, bottom, top, near, far) {
     return new Float32Array([
       2 / (right - left), 0, 0, 0,
@@ -226,10 +206,7 @@ export const Mat4 = {
   }
 };
 
-// Normal matrix = transpose(inverse(3x3 kiri-atas model)).
-// Sama dengan Praktikum 5. Penting saat model diskalakan TIDAK seragam
-// (contoh: bilah louver yang tipis), agar normal tetap tegak lurus
-// permukaan.
+
 export function normalMatrixFromMat4(m) {
   const a00 = m[0], a01 = m[1], a02 = m[2];
   const a10 = m[4], a11 = m[5], a12 = m[6];
@@ -259,7 +236,6 @@ export function normalMatrixFromMat4(m) {
   const inv21 = (-a21 * a00 + a01 * a20) * det;
   const inv22 = (a11 * a00 - a01 * a10) * det;
 
-  // transpose(inverse)
   return new Float32Array([
     inv00, inv10, inv20,
     inv01, inv11, inv21,
@@ -267,8 +243,6 @@ export function normalMatrixFromMat4(m) {
   ]);
 }
 
-// Random dengan seed tetap → posisi pohon/warna baju mahasiswa selalu
-// sama setiap kali halaman dibuka (penting saat demo ke dosen).
 export function createRandom(seed) {
   let s = seed >>> 0;
 

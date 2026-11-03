@@ -1,68 +1,44 @@
-// =====================================================================
-// config.js — SEMUA parameter scene ada di sini (siap untuk "challenge")
-// ---------------------------------------------------------------------
-// Satuan: 1 unit = 1 meter. Sumbu: +Y ke atas, +Z ke arah kamera
-// (depan gedung), +X ke kanan (dilihat dari depan gedung).
-// Titik (0,0,0) = pusat tapak Tower 1 di permukaan tanah.
-//
-// Kalau dosen minta "ganti warna / jumlah lantai / kecepatan / posisi
-// lampu / FOV", cukup ubah nilai di file ini lalu refresh browser.
-// =====================================================================
 
 export const CONFIG = {
-  // ------------------------------------------------------------------
   // GEDUNG MENARA SAINS (Tower 1 ITS)  → dipakai building.js
-  // ------------------------------------------------------------------
   building: {
-    // ASUMSI: ±13 lantai, dihitung dari ±26 baris panel (2 baris/lantai)
-    // dan ±13 bordes tangga di balik louver pada foto stop-motion-tilt/7.
     floors: 13,
-    // ASUMSI: 3.3 m/lantai → total ±46 m (rasio tinggi:lebar di foto ±2.6:1)
-    floorHeight: 3.3,          // tinggi 1 lantai (m)
-    width: 17.5,               // lebar muka depan (sumbu X)
-    depth: 15.0,               // kedalaman / sisi louver (sumbu Z)
-    panelColumns: 13,          // kolom panel di muka depan (6 + kaca + 6)
-    glassColumnIndex: 6,       // kolom ke-7 (index 6) = strip kaca biru
-    panelRowsPerFloor: 2,      // 2 baris panel per lantai (lihat foto)
-    crownHeight: 3.4,          // pita atap gelap "TOWER 1 ITS"
-    crownOverhang: 0.8,        // seberapa jauh kanopi atap menjorok
-    louverGap: 1.15,           // jarak bidang louver dari dinding kiri
-    louverSpacing: 0.45,       // jarak antar bilah louver
-    louverStartFloor: 1,       // louver mulai dari lantai 2 (lantai 1 terbuka)
+    floorHeight: 3.3,          
+    width: 17.5,               
+    depth: 15.0,               
+    panelColumns: 13,          
+    glassColumnIndex: 6,       
+    panelRowsPerFloor: 2,      
+    crownHeight: 3.4,          
+    crownOverhang: 0.8,        
+    louverGap: 1.15,           
+    louverSpacing: 0.45,       
+    louverStartFloor: 1,       
 
     colors: {
-      panel: [0.86, 0.88, 0.90],      // panel abu-perak
-      glass: [0.22, 0.42, 0.72],      // strip kaca biru
-      louver: [0.93, 0.93, 0.90],     // bilah louver putih gading
-      stair: [0.36, 0.37, 0.38],      // tangga darurat (lebih gelap agar terlihat di balik louver)
-      crown: [0.17, 0.18, 0.20],      // pita atap gelap
-      base: [0.55, 0.56, 0.58]        // plint dasar
+      panel: [0.86, 0.88, 0.90],      
+      glass: [0.22, 0.42, 0.72],      
+      louver: [0.93, 0.93, 0.90],     
+      stair: [0.36, 0.37, 0.38],      
+      crown: [0.17, 0.18, 0.20],      
+      base: [0.55, 0.56, 0.58]       
     }
   },
 
-  // Gedung-gedung di sekitar (lihat foto pan: KPA 2 di kiri, gedung lama
-  // beratap genteng di kanan belakang, gedung rendah putih-biru di kiri).
   neighbors: {
-    // Posisi dihitung ulang dari foto stop-motion-pan/1 & /5 (lihat
-    // README bagian "Kalibrasi kemiripan").
     kpa2: { position: [-50, 0, 2.4], size: [40, 11, 40] },
     lowLeft: { position: [-25, 0, -22], size: [24, 8, 14] },
     oldRight: { position: [54, 0, -30], size: [14, 15, 36] }
   },
 
-  // ------------------------------------------------------------------
-  // TAMAN DEPAN & PROPERTI  → props.js
-  // ------------------------------------------------------------------
   garden: {
-    // ASUMSI: dari lebar dinding di foto, taman berada ±10 m di depan
-    // muka menara (bukan menempel).
-    center: [3.0, 0, 18.0],    // pusat dinding planter
+    center: [3.0, 0, 18.0],    
     wallLength: 17.0,
     wallHeight: 1.35,
-    radiusX: 8.5,              // jari-jari taman setengah elips
+    radiusX: 8.5,              
     radiusZ: 5.5,
     totemPosition: [-2.0, 0, 19.7],
-    totemSize: [1.8, 6.2, 0.5]       // ASUMSI dari foto: ±6 m (lebih tinggi dari orang)
+    totemSize: [1.8, 6.2, 0.5]       
   },
 
   props: {
@@ -77,25 +53,16 @@ export const CONFIG = {
     cableEnd: [-50, 13, 62]
   },
 
-  // ------------------------------------------------------------------
-  // POHON  → tree.js
-  // ------------------------------------------------------------------
+  // POHON 
   trees: {
-    // Pohon besar di depan gedung (objek "hero" kedua). ASUMSI tinggi
-    // ±16 m (≈1/3 tinggi menara, sesuai foto).
-    // Dari foto stop-motion-pan/5: puncak ±18.5 m, tajuk mulai ±3.5 m,
-    // lebar tajuk ±10 m (lonjong tinggi).
     hero: { position: [2.6, 0, 10.6], height: 18.5, crownRadius: 4.6 },
 
-    // Pohon lain: [x, z, tinggi, jari-jari tajuk, tipe]
-    // tipe "round" = tajuk bulat rimbun, "wide" = tajuk lebar,
-    // "tall" = kurus tinggi (pohon kanan jauh di foto)
     others: [
-      [-25, 20, 13, 6.0, "round"],   // depan KPA 2 (kiri foto)
-      [20, 16, 19, 9.5, "wide"],     // rindang kanan di belakang pos satpam
-      [31, 26, 17, 8.5, "wide"],     // rindang kanan kedua
-      [37, 41, 15, 4.0, "tall"],     // kurus tinggi kanan jauh
-      [-2.6, 11.4, 6, 1.5, "round"], // pohon kecil di taman (kiri totem)
+      [-25, 20, 13, 6.0, "round"],   
+      [20, 16, 19, 9.5, "wide"],     
+      [31, 26, 17, 8.5, "wide"],     
+      [37, 41, 15, 4.0, "tall"],     
+      [-2.6, 11.4, 6, 1.5, "round"], 
       [24, 2, 12, 5.0, "round"],
       [-15, -14, 11, 4.5, "round"],
       [14, -20, 12, 5.0, "round"],
@@ -103,13 +70,13 @@ export const CONFIG = {
       [-6, -36, 12, 5.5, "round"]
     ],
 
-    // Pohon latar (pengisi kampus di kejauhan), dibuat dengan LOOP
+    // Pohon latar
     background: { count: 34, radius: [95, 165] },
 
-    swayAmplitude: 1.6,       // derajat goyangan batang
-    swaySpeed: 1.1,           // rad/detik
-    leafPulse: 0.025,         // skala "napas" gugus daun (2.5%)
-    growDuration: 3.0,        // detik efek tumbuh di awal
+    swayAmplitude: 1.6,       
+    swaySpeed: 1.1,           
+    leafPulse: 0.025,         
+    growDuration: 3.0,        
 
     colors: {
       bark: [0.36, 0.28, 0.22],
@@ -117,13 +84,10 @@ export const CONFIG = {
     }
   },
 
-  // ------------------------------------------------------------------
-  // MAHASISWA  → student.js
-  // ------------------------------------------------------------------
+  // MAHASISWA 
   students: {
     count: 12,
-    walkSpeed: [1.1, 1.6],     // m/detik (min, max)
-    // Jalur (polyline) di plaza paving. Mahasiswa bolak-balik di jalur.
+    walkSpeed: [1.1, 1.6],     
     paths: [
       [[-20, 0, 30], [-6, 0, 27], [10, 0, 25]],
       [[-12, 0, 18], [-8, 0, 23], [-4, 0, 34], [-6, 0, 50]],
@@ -145,81 +109,66 @@ export const CONFIG = {
     hijabChance: 0.4
   },
 
-  // ------------------------------------------------------------------
-  // MOTOR  → vehicle.js
-  // ------------------------------------------------------------------
+  // MOTOR  
   vehicles: {
-    loopCenter: [3.0, 0, 21.0],   // motor berputar mengelilingi taman
+    loopCenter: [3.0, 0, 21.0],   
     loopRadius: [12.5, 8.5],
-    loopSpeed: 4.5,               // m/detik
+    loopSpeed: 4.5,               
     loopCount: 2,
-    gatePath: [[-17.5, 0, 46], [-17.5, 0, -6]], // lewat palang kiri
+    gatePath: [[-17.5, 0, 46], [-17.5, 0, -6]], 
     gateSpeed: 4.0,
     bodyColors: [[0.12, 0.12, 0.13], [0.75, 0.10, 0.12], [0.82, 0.82, 0.84]],
     jacketOjol: [0.20, 0.62, 0.25]
   },
 
-  // ------------------------------------------------------------------
-  // LINGKUNGAN  → environment.js
-  // ------------------------------------------------------------------
+  // LINGKUNGAN 
   environment: {
     groundSize: 360,
-    cloudCount: 16,               // awan 3D (selain lapisan awan di shader langit)
+    cloudCount: 16,               
     cloudHeight: [70, 100],
-    cloudSpeed: 2.2,             // m/detik (translasi awan)
-    cloudRange: 260,             // awan muncul lagi setelah keluar batas
+    cloudSpeed: 2.2,             
+    cloudRange: 260,             
     sunDistance: 320,
-    sunYawDeg: 71,               // arah terbit (sun naik di belakang gedung)
+    sunYawDeg: 71,               
     sunRadius: 9
   },
 
-  // ------------------------------------------------------------------
-  // CAHAYA  → lighting.js
-  // ------------------------------------------------------------------
+  // CAHAYA 
   lighting: {
-    // Foto & video diambil ±08:43 WIB (metadata EXIF/QuickTime).
     startHour: 8.75,
-    dayLengthSeconds: 120,       // 1 siklus 24 jam = 120 detik saat auto
-    ambientStrength: 1.0,        // tinggi karena langit berawan (difus)
-    sunIntensity: 0.38,          // matahari tertutup awan → bayangan samar
-    exposure: 1.3,               // kecerahan sebelum tone mapping ACES
-    cloudCover: 0.75,            // lapisan awan langit (0 cerah – 1 mendung)
+    dayLengthSeconds: 120,       
+    ambientStrength: 1.0,        
+    sunIntensity: 0.38,          
+    exposure: 1.3,               
+    cloudCover: 0.75,            
     specularStrength: 1.0,
     shininessScale: 1.0,
-    pointLightRange: 0.045,      // makin kecil makin jauh jangkauan lampu
+    pointLightRange: 0.045,      
     fogDensity: 0.0032,
     shadowMapSize: 2048,
-    shadowArea: 95               // setengah lebar area shadow map (m)
+    shadowArea: 95               
   },
 
-  // ------------------------------------------------------------------
-  // KAMERA  → camera.js
-  // ------------------------------------------------------------------
+  // KAMERA 
   camera: {
     fov: 50,
     near: 0.3,
     far: 1200,
-    // Posisi default PALING JAUH: seluruh menara + pohon + taman masuk.
     defaultPosition: [-44, 7, 112],
     defaultTarget: [0, 21, 0],
-    // Titik tempat Anggota A berdiri saat memotret/merekam, dihitung dari
-    // foto stop-motion-pan/5: ±60 m dari menara, menyerong 26° ke kiri,
-    // kamera mendongak ±9°. FOV vertikal kamera utama iPhone 16:9 ≈ 42°.
     videoPosition: [-32, 1.6, 56],
     videoTarget: [-4.5, 9.2, 15.0],
     videoFov: 42,
-    moveSpeed: 14,               // m/detik (W/S/A/D)
-    turnSpeed: 60,               // derajat/detik (Q/E/←/→)
-    smoothing: 7.0,              // makin besar makin cepat mengejar target
-    minDistanceToTower: 9.5,     // kamera tidak boleh menembus gedung
+    moveSpeed: 14,               
+    turnSpeed: 60,               
+    smoothing: 7.0,              
+    minDistanceToTower: 9.5,     
     maxDistance: 220,
-    orbitSpeed: 0.12             // rad/detik untuk orbit camera (O)
+    orbitSpeed: 0.12             
   },
 
-  // ------------------------------------------------------------------
   // ANIMASI GLOBAL
-  // ------------------------------------------------------------------
   animation: {
-    speed: 1.0                   // pengali kecepatan semua animasi
+    speed: 1.0                   
   }
 };

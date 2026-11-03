@@ -1,25 +1,3 @@
-// =====================================================================
-// geometry.js — Primitif 3D buatan sendiri (posisi + normal + UV)
-// ---------------------------------------------------------------------
-// Semua primitif dibuat sebagai daftar SEGITIGA tanpa index, sama seperti
-// cube di Praktikum 4/5 (gl.drawArrays(gl.TRIANGLES, ...)).
-//
-// Setiap generator mengembalikan:
-//   { positions: [...], normals: [...], texCoords: [...] }
-//   - normals = "smooth normal" (normal permukaan yang sebenarnya,
-//     untuk bola/silinder = normal melengkung)
-//   - flat normal dihitung otomatis per segitiga di createMesh()
-//     → tombol F mengganti FLAT ↔ SMOOTH seperti di Praktikum 5.
-//
-// Primitif: cube, box (UV dalam meter), plane, sphere, cylinder, cone,
-// taperedBox (limas terpancung / piramida), prism (atap pelana),
-// ellipseDisc (taman setengah elips), arcWall (dinding melengkung).
-// =====================================================================
-
-// ---------------------------------------------------------------------
-// Helper kecil: menambahkan satu QUAD (2 segitiga) ke data.
-// p0..p3 berurutan berlawanan jarum jam (CCW) dilihat dari depan.
-// ---------------------------------------------------------------------
 function pushQuad(data, p0, p1, p2, p3, normal, uv0, uv1, uv2, uv3) {
   const verts = [p0, p1, p2, p0, p2, p3];
   const uvs = [uv0, uv1, uv2, uv0, uv2, uv3];
@@ -45,29 +23,17 @@ function faceNormal(a, b, c) {
   return [nx / len, ny / len, nz / len];
 }
 
-// ---------------------------------------------------------------------
-// CUBE satuan (−0.5..0.5), UV 0..1 per sisi — sama dengan Praktikum 5.
-// Dipakai untuk benda kecil yang diskalakan lewat node (bilah louver,
-// tiang, badan motor, tubuh mahasiswa, dll).
-// ---------------------------------------------------------------------
+// CUBE satuan
 export function createCube() {
   return createBox(1, 1, 1, { unitUV: true });
 }
 
-// ---------------------------------------------------------------------
-// BOX dengan ukuran asli (meter), berpusat di (0,0,0).
-// Jika options.tile = [tu, tv] → UV dihitung dalam METER / tile,
-// sehingga texture fasad tidak "melar" walaupun sisi depan (17 m) dan
-// sisi samping (13 m) berbeda lebar. Ini kunci agar grid panel rapi.
-// Jika options.unitUV = true → UV 0..1 per sisi (seperti cube praktikum).
-// ---------------------------------------------------------------------
 export function createBox(w, h, d, options = {}) {
   const data = emptyData();
   const x = w / 2, y = h / 2, z = d / 2;
   const tu = options.tile ? options.tile[0] : 1;
   const tv = options.tile ? options.tile[1] : 1;
 
-  // Ukuran sisi (lebar, tinggi) untuk menghitung UV dalam meter
   function uv(faceW, faceH) {
     if (options.unitUV || !options.tile) {
       return [[0, 0], [1, 0], [1, 1], [0, 1]];
@@ -101,10 +67,7 @@ export function createBox(w, h, d, options = {}) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// PLANE horizontal (bidang XZ, menghadap +Y), berpusat di (0,0,0).
-// tileU/tileV = berapa kali texture diulang (wrap REPEAT).
-// ---------------------------------------------------------------------
+// PLANE horizontal
 export function createPlane(w, d, tileU = 1, tileV = 1) {
   const data = emptyData();
   const x = w / 2, z = d / 2;
@@ -119,7 +82,7 @@ export function createPlane(w, d, tileU = 1, tileV = 1) {
   return data;
 }
 
-// Plane VERTIKAL (bidang XY, menghadap +Z) — untuk papan nama/tulisan.
+// Plane VERTIKAL
 export function createQuad(w, h) {
   const data = emptyData();
   const x = w / 2, y = h / 2;
@@ -134,15 +97,13 @@ export function createQuad(w, h) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// SPHERE jari-jari 1 (latitude-longitude). Normal = posisi (karena r=1).
-// ---------------------------------------------------------------------
+// SPHERE jari-jari 1
 export function createSphere(latBands = 14, lonBands = 18) {
   const data = emptyData();
 
   function point(lat, lon) {
-    const theta = (lat / latBands) * Math.PI;        // 0..π (atas→bawah)
-    const phi = (lon / lonBands) * Math.PI * 2;      // 0..2π
+    const theta = (lat / latBands) * Math.PI;        
+    const phi = (lon / lonBands) * Math.PI * 2;     
     const x = Math.sin(theta) * Math.cos(phi);
     const y = Math.cos(theta);
     const z = Math.sin(theta) * Math.sin(phi);
@@ -156,7 +117,6 @@ export function createSphere(latBands = 14, lonBands = 18) {
       const c = point(lat + 1, lon + 1);
       const d = point(lat, lon + 1);
 
-      // Dua segitiga, urutan CCW dilihat dari luar bola
       for (const v of [a, d, c, a, c, b]) {
         data.positions.push(...v.p);
         data.normals.push(...v.p);
@@ -168,14 +128,10 @@ export function createSphere(latBands = 14, lonBands = 18) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// CYLINDER dari y=0 (alas) sampai y=1 (atas). Pivot di ALAS → cocok
-// untuk batang/cabang pohon & lengan/kaki: rotasi node = rotasi di sendi.
-// radiusTop = 0 → menjadi CONE (kerucut).
-// ---------------------------------------------------------------------
+// CYLINDER
 export function createCylinder(radiusBottom = 1, radiusTop = 1, segments = 16, caps = true) {
   const data = emptyData();
-  const slope = radiusBottom - radiusTop; // untuk normal sisi kerucut
+  const slope = radiusBottom - radiusTop;
 
   for (let i = 0; i < segments; i++) {
     const a0 = (i / segments) * Math.PI * 2;
@@ -188,7 +144,6 @@ export function createCylinder(radiusBottom = 1, radiusTop = 1, segments = 16, c
     const t0 = [c0 * radiusTop, 1, s0 * radiusTop];
     const t1 = [c1 * radiusTop, 1, s1 * radiusTop];
 
-    // Normal sisi miring: (cos, slope, sin) dinormalisasi
     const n0 = normalize3([c0, slope, s0]);
     const n1 = normalize3([c1, slope, s1]);
 
@@ -205,7 +160,6 @@ export function createCylinder(radiusBottom = 1, radiusTop = 1, segments = 16, c
     }
 
     if (caps) {
-      // Tutup bawah
       if (radiusBottom > 0) {
         for (const p of [[0, 0, 0], b0, b1]) {
           data.positions.push(...p);
@@ -214,7 +168,6 @@ export function createCylinder(radiusBottom = 1, radiusTop = 1, segments = 16, c
         }
       }
 
-      // Tutup atas
       if (radiusTop > 0) {
         for (const p of [[0, 1, 0], t1, t0]) {
           data.positions.push(...p);
@@ -237,11 +190,7 @@ function normalize3(v) {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
-// ---------------------------------------------------------------------
-// TAPERED BOX: kotak yang alas & atasnya beda ukuran, y = 0..h.
-//   - topW = topD = 0 → piramida (atap pos satpam)
-//   - top > bottom → melebar ke atas (kanopi atap Tower 1 yang menjorok)
-// ---------------------------------------------------------------------
+// TAPERED BOX
 export function createTaperedBox(bw, bd, tw, td, h) {
   const data = emptyData();
   const B = [
@@ -254,35 +203,27 @@ export function createTaperedBox(bw, bd, tw, td, h) {
   ];
   const uv = [[0, 0], [1, 0], [1, 1], [0, 1]];
 
-  // 4 sisi miring: depan, kanan, belakang, kiri
   for (let i = 0; i < 4; i++) {
     const j = (i + 1) % 4;
     const n = faceNormal(B[i], B[j], T[j]);
     pushQuad(data, B[i], B[j], T[j], T[i], n, ...uv);
   }
 
-  // Tutup atas (jika ada)
   if (tw > 0 && td > 0) {
     pushQuad(data, T[0], T[1], T[2], T[3], [0, 1, 0], ...uv);
   }
 
-  // Tutup bawah
   pushQuad(data, B[3], B[2], B[1], B[0], [0, -1, 0], ...uv);
 
   return data;
 }
 
-// ---------------------------------------------------------------------
-// PRISM segitiga (atap pelana), punggung atap sejajar sumbu Z.
-// Lebar w (X), tinggi h (Y, dari 0), panjang d (Z), berpusat di X & Z.
-// UV dalam meter / tile agar genteng tidak melar.
-// ---------------------------------------------------------------------
+// PRISM segitiga
 export function createPrism(w, h, d, tile = 1) {
   const data = emptyData();
   const x = w / 2, z = d / 2;
   const slopeLen = Math.hypot(x, h);
 
-  // Sisi miring kiri & kanan
   const nL = normalize3([-h, x, 0]);
   const nR = normalize3([h, x, 0]);
   const u = d / tile, v = slopeLen / tile;
@@ -292,7 +233,6 @@ export function createPrism(w, h, d, tile = 1) {
   pushQuad(data, [x, 0, z], [x, 0, -z], [0, h, -z], [0, h, z], nR,
     [0, 0], [u, 0], [u, v], [0, v]);
 
-  // Segitiga depan & belakang
   const tri = (a, b, c, n) => {
     for (const p of [a, b, c]) {
       data.positions.push(...p);
@@ -307,11 +247,7 @@ export function createPrism(w, h, d, tile = 1) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// ELLIPSE DISC: bidang datar (menghadap +Y) berbentuk elips jari-jari 1
-// dari sudut a0 sampai a1 (radian). a0=0, a1=π → setengah elips ke +Z.
-// UV dalam meter (setelah diskalakan) diatur lewat uvScale material.
-// ---------------------------------------------------------------------
+// ELLIPSE DISC
 export function createEllipseDisc(segments = 32, a0 = 0, a1 = Math.PI * 2) {
   const data = emptyData();
 
@@ -331,10 +267,7 @@ export function createEllipseDisc(segments = 32, a0 = 0, a1 = Math.PI * 2) {
   return data;
 }
 
-// ---------------------------------------------------------------------
-// ARC WALL: dinding/kerb melengkung mengikuti elips (rx, rz).
-// Dipakai untuk kerb beton taman depan yang melengkung.
-// ---------------------------------------------------------------------
+// ARC WALL
 export function createArcWall(rx, rz, thickness, height, segments = 40, a0 = 0, a1 = Math.PI) {
   const data = emptyData();
 
@@ -351,13 +284,10 @@ export function createArcWall(rx, rz, thickness, height, segments = 40, a0 = 0, 
     const nIn = [-nOut[0], 0, -nOut[2]];
     const uv = [[0, 0], [1, 0], [1, 1], [0, 1]];
 
-    // Sisi luar
     pushQuad(data, [o1[0], 0, o1[1]], [o0[0], 0, o0[1]],
       [o0[0], height, o0[1]], [o1[0], height, o1[1]], nOut, ...uv);
-    // Sisi dalam
     pushQuad(data, [i0[0], 0, i0[1]], [i1[0], 0, i1[1]],
       [i1[0], height, i1[1]], [i0[0], height, i0[1]], nIn, ...uv);
-    // Atas
     pushQuad(data, [i0[0], height, i0[1]], [i1[0], height, i1[1]],
       [o1[0], height, o1[1]], [o0[0], height, o0[1]], [0, 1, 0], ...uv);
   }
@@ -365,10 +295,7 @@ export function createArcWall(rx, rz, thickness, height, segments = 40, a0 = 0, 
   return data;
 }
 
-// =====================================================================
-// MESH: upload data ke GPU (buffer) — gaya createArrayBuffer Praktikum 5
-// =====================================================================
-
+// MESH
 export function createArrayBuffer(gl, data) {
   const buffer = gl.createBuffer();
 
@@ -378,9 +305,6 @@ export function createArrayBuffer(gl, data) {
   return buffer;
 }
 
-// Hitung FLAT normal: tiap segitiga memakai satu normal (normal bidang
-// segitiga tsb). Inilah yang membuat bola terlihat "bersegi" saat
-// mode FLAT, persis seperti eksperimen Flat vs Smooth di Praktikum 5.
 function computeFlatNormals(positions) {
   const normals = new Float32Array(positions.length);
 
@@ -398,7 +322,6 @@ function computeFlatNormals(positions) {
   return normals;
 }
 
-// Ubah segitiga menjadi garis (3 sisi per segitiga) untuk mode wireframe.
 function computeWireframe(positions) {
   const lines = [];
 
@@ -424,7 +347,6 @@ export function createMesh(gl, data) {
     flatNormalBuffer: createArrayBuffer(gl, flatNormals),
     texCoordBuffer: createArrayBuffer(gl, texCoords),
     vertexCount: positions.length / 3,
-    // Buffer garis dibuat hanya jika wireframe dinyalakan (hemat memori)
     wireBuffer: null,
     wireCount: 0,
     getWireBuffer() {
@@ -439,10 +361,7 @@ export function createMesh(gl, data) {
   };
 }
 
-// =====================================================================
-// Cache mesh: primitif yang sama dipakai bersama oleh banyak node.
-// Contoh: 1 mesh cube dipakai ratusan bilah louver → hemat memori GPU.
-// =====================================================================
+// Cache mesh
 const meshCache = new Map();
 
 export function getMesh(gl, key, buildFn) {
@@ -457,7 +376,6 @@ export function getMeshCount() {
   return meshCache.size;
 }
 
-// Shortcut yang sering dipakai modul objek
 export const Meshes = {
   cube: (gl) => getMesh(gl, "cube", createCube),
   sphere: (gl) => getMesh(gl, "sphere", () => createSphere(14, 18)),

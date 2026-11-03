@@ -1,54 +1,29 @@
-// =====================================================================
-// building.js — Gedung Menara Sains (Tower 1 ITS) + gedung sekitar
-// (Modul Anggota A)
-// ---------------------------------------------------------------------
-// Dimensi diambil dari CONFIG.building (lihat config.js). Ciri dari foto:
-//   - Balok ramping, tinggi : lebar muka ≈ 3 : 1, ±13 lantai
-//   - Muka depan: grid panel abu-perak, 6 kolom | strip kaca biru | 5 kolom
-//   - Sisi kiri: louver putih vertikal + tangga darurat zig-zag di baliknya
-//   - Atap: pita/kanopi gelap menjorok bertuliskan "TOWER 1 ITS"
-//
-// Hierarki:
-//   Gedung Menara Sains
-//   ├─ Plint Dasar → Pintu Lobi
-//   ├─ Badan Menara (texture panel)
-//   │   ├─ Bingkai Strip Kiri / Kanan
-//   │   └─ Lantai i (loop) → Kaca Lantai i
-//   ├─ Sisi Louver (kiri)
-//   │   ├─ Bilah Louver i (loop) ; Rangka Atas/Bawah ; Tulisan AKTUARIA
-//   │   └─ Tangga Darurat → Lantai i → Anak Tangga Diagonal → Railing ; Bordes
-//   ├─ Sisi Kanan (koridor) → Kolom i ; Lis Koridor i
-//   └─ Atap → Pita Atap (kanopi gelap) → Papan TOWER 1 ITS
-//             └─ Atap Datar → Unit AC i ; Antena
-// =====================================================================
-
 import { CONFIG } from "./config.js";
 import { Node, createMaterial } from "./scene-graph.js";
 import { Meshes, getMesh, createBox, createTaperedBox, createPrism } from "./geometry.js";
 import { createRandom } from "./math3d.js";
 import { segmentBetween } from "./environment.js";
 
-// Konstanta dimensi (alias pendek dari CONFIG agar kode mudah dibaca)
 const B = CONFIG.building;
 const FLOORS = B.floors;
 const FLOOR_HEIGHT = B.floorHeight;
 const WIDTH = B.width;
 const DEPTH = B.depth;
-const HEIGHT = FLOORS * FLOOR_HEIGHT;            // tinggi badan menara
-const COLUMN_WIDTH = WIDTH / B.panelColumns;     // lebar 1 kolom panel
-const GLASS_X = -WIDTH / 2 + (B.glassColumnIndex + 0.5) * COLUMN_WIDTH; // pusat strip kaca
+const HEIGHT = FLOORS * FLOOR_HEIGHT;            
+const COLUMN_WIDTH = WIDTH / B.panelColumns;     
+const GLASS_X = -WIDTH / 2 + (B.glassColumnIndex + 0.5) * COLUMN_WIDTH; 
 
 export function createTower({ gl, tm }) {
   const tower = new Node("Gedung Menara Sains");
 
-  // ---------------- Material ----------------
+  //  Material 
   const panelMaterial = createMaterial({
     name: "panel fasad",
     color: B.colors.panel,
     texture: tm.get("facade"),
-    specular: 0.45,           // semi-glossy (ACP / kaca reflektif tipis)
+    specular: 0.45,           
     shininess: 48,
-    reflectivity: 0.06,       // sedikit memantulkan langit
+    reflectivity: 0.06,       
     nightEmissive: [1.0, 0.85, 0.6],
     emissiveTexture: tm.get("facadeEmissive")
   });
@@ -57,21 +32,19 @@ export function createTower({ gl, tm }) {
     name: "kaca biru",
     color: [1, 1, 1],
     texture: tm.get("glass"),
-    specular: 1.2,            // specular tinggi
-    shininess: 128,           // highlight kecil & tajam
-    reflectivity: 0.35,       // pantulan langit lebih kuat
+    specular: 1.2,            
+    shininess: 128,           
+    reflectivity: 0.35,       
     nightEmissive: [0.55, 0.65, 0.85]
   });
 
   const frameMaterial = createMaterial({ name: "bingkai", color: [0.86, 0.87, 0.88], specular: 0.3, shininess: 32 });
-  const louverMaterial = createMaterial({ name: "louver", color: B.colors.louver, specular: 0.05, shininess: 6 }); // matte
+  const louverMaterial = createMaterial({ name: "louver", color: B.colors.louver, specular: 0.05, shininess: 6 }); 
   const stairMaterial = createMaterial({ name: "tangga", color: B.colors.stair, specular: 0.1, shininess: 8 });
-  const crownMaterial = createMaterial({ name: "kanopi gelap", color: B.colors.crown, specular: 0.08, shininess: 10 }); // matte gelap
+  const crownMaterial = createMaterial({ name: "kanopi gelap", color: B.colors.crown, specular: 0.08, shininess: 10 }); 
   const baseMaterial = createMaterial({ name: "plint", color: B.colors.base, texture: tm.get("concrete"), specular: 0.05 });
 
-  // ------------------------------------------------------------------
   // PLINT DASAR + PINTU LOBI
-  // ------------------------------------------------------------------
   const plinth = tower.add(new Node("Plint Dasar", {
     position: [0, 0.2, 0],
     mesh: getMesh(gl, "plinth", () => createBox(WIDTH + 0.8, 0.4, DEPTH + 0.8)),
@@ -91,11 +64,8 @@ export function createTower({ gl, tm }) {
     })
   }));
 
-  // ------------------------------------------------------------------
+
   // BADAN MENARA — satu box besar dengan texture panel.
-  // UV dalam meter: 1 tile texture = 4 kolom × 4 lantai, sehingga grid
-  // panel jatuh tepat di batas kolom/lantai pada SEMUA sisi.
-  // ------------------------------------------------------------------
   const body = tower.add(new Node("Badan Menara", {
     position: [0, HEIGHT / 2, 0],
     mesh: getMesh(gl, "towerBody", () => createBox(WIDTH, HEIGHT, DEPTH, {
@@ -114,8 +84,6 @@ export function createTower({ gl, tm }) {
   }
 
   // Lantai-lantai (LOOP) → segmen kaca per lantai.
-  // Origin tiap lantai = lantai itu sendiri; jadi mengubah FLOORS di
-  // config otomatis menambah/mengurangi node lantai.
   const random = createRandom(77);
 
   for (let i = 0; i < FLOORS; i++) {
@@ -123,12 +91,11 @@ export function createTower({ gl, tm }) {
       position: [0, -HEIGHT / 2 + i * FLOOR_HEIGHT, 0]
     }));
 
-    // Lantai 1 = lobi (kaca lebih gelap/pintu), lantai lain = strip kaca
     if (i === 0) {
       continue;
     }
 
-    const lit = random() < 0.7 ? 1 : 0.25; // sebagian lantai lampunya mati saat malam
+    const lit = random() < 0.7 ? 1 : 0.25;
     floor.add(new Node(`Kaca Lantai ${i + 1}`, {
       position: [GLASS_X, FLOOR_HEIGHT / 2, DEPTH / 2 + 0.05],
       mesh: getMesh(gl, "glassSegment", () => createBox(COLUMN_WIDTH, FLOOR_HEIGHT - 0.04, 0.1, { unitUV: true })),
@@ -136,9 +103,7 @@ export function createTower({ gl, tm }) {
     }));
   }
 
-  // ------------------------------------------------------------------
   // SISI LOUVER (KIRI) — bilah vertikal + tangga darurat di baliknya
-  // ------------------------------------------------------------------
   const louverX = -WIDTH / 2 - B.louverGap;
   const louverBottom = B.louverStartFloor * FLOOR_HEIGHT;
   const louverHeight = HEIGHT - louverBottom + 0.6;
@@ -153,13 +118,11 @@ export function createTower({ gl, tm }) {
     louverSide.add(new Node(`Bilah Louver ${i + 1}`, {
       position: [0, louverHeight / 2, -DEPTH / 2 + i * B.louverSpacing],
       mesh: Meshes.cube(gl),
-      // SKALA NON-SERAGAM: kubus satuan → bilah tipis & tinggi
       meshScale: [0.16, louverHeight, 0.12],
       material: louverMaterial
     }));
   }
 
-  // Rangka horizontal atas & bawah louver
   for (const [name, y] of [["Rangka Bawah", 0.05], ["Rangka Atas", louverHeight - 0.05]]) {
     louverSide.add(new Node(name, {
       position: [0, y, 0],
@@ -169,26 +132,24 @@ export function createTower({ gl, tm }) {
     }));
   }
 
-  // Tulisan "AKTUARIA" (huruf timbul di bagian bawah louver, lihat foto)
+  // Tulisan "AKTUARIA"
   louverSide.add(new Node("Tulisan AKTUARIA", {
     position: [-0.2, 2.6, 3.3],
-    rotation: [0, -90, 0],               // quad menghadap −X (keluar)
+    rotation: [0, -90, 0],
     mesh: Meshes.quad(gl),
     meshScale: [5.2, 0.7, 1],
     material: createMaterial({ name: "aktuaria", texture: tm.get("aktuariaSign"), specular: 0.1 }),
     castShadow: false
   }));
 
-  // ---- Tangga darurat zig-zag (anak dari Sisi Louver) ----
-  // Tiap lantai: 1 anak tangga diagonal melintang sisi kiri, arahnya
-  // bergantian (zig-zag), + bordes di ujung + railing sejajar.
+  // Tangga darurat zig-zag (anak dari Sisi Louver) 
   const stairs = louverSide.add(new Node("Tangga Darurat", {
     position: [B.louverGap / 2 + 0.05, -louverBottom, 0]
   }));
-  const run = DEPTH - 2.2;  // panjang horizontal tiap anak tangga
+  const run = DEPTH - 2.2;  
 
   for (let i = 0; i < FLOORS; i++) {
-    const dir = i % 2 === 0 ? -1 : 1;   // bergantian ke belakang/ke depan
+    const dir = i % 2 === 0 ? -1 : 1;  
     const y0 = i * FLOOR_HEIGHT;
     const flightStart = [0, y0, -dir * run / 2];
     const flightEnd = [0, y0 + FLOOR_HEIGHT, dir * run / 2];
@@ -199,8 +160,7 @@ export function createTower({ gl, tm }) {
     flight.castShadow = true;
     floorStair.add(flight);
 
-    // Railing: sejajar anak tangga, 1 m di atasnya (anak dari tangga →
-    // ikut posisi/rotasi tangga secara otomatis)
+    // Railing
     flight.add(new Node("Railing", {
       position: [-0.42, 1.0, 0],
       mesh: Meshes.cube(gl),
@@ -217,10 +177,7 @@ export function createTower({ gl, tm }) {
     }));
   }
 
-  // ------------------------------------------------------------------
-  // SISI KANAN — ASUMSI: lis koridor tiap lantai + kolom (tidak terlihat
-  // jelas di foto karena semua foto diambil dari kiri-depan).
-  // ------------------------------------------------------------------
+  // SISI KANAN
   const rightSide = tower.add(new Node("Sisi Kanan (koridor)", {
     position: [WIDTH / 2, 0, 0]
   }));
@@ -243,11 +200,8 @@ export function createTower({ gl, tm }) {
     }));
   }
 
-  // ------------------------------------------------------------------
-  // ATAP — pita/kanopi gelap yang MELEBAR ke atas (menjorok keluar)
-  // ------------------------------------------------------------------
-  // Atap menutupi badan menara + sisi louver, jadi pusatnya digeser ke
-  // kiri setengah jarak louver.
+
+  // ATAP
   const roof = tower.add(new Node("Atap", { position: [-B.louverGap / 2, HEIGHT, 0] }));
   const ov = B.crownOverhang;
   const crownWidth = WIDTH + B.louverGap + 0.3;
@@ -260,12 +214,11 @@ export function createTower({ gl, tm }) {
     material: crownMaterial
   }));
 
-  // Papan tulisan mengikuti kemiringan muka depan kanopi
   const lean = Math.atan2(ov - 0.15, B.crownHeight) * 180 / Math.PI;
 
   crown.add(new Node("Papan TOWER 1 ITS", {
     position: [0, B.crownHeight / 2, (DEPTH + 0.3) / 2 + (ov - 0.15) / 2 + 0.05],
-    rotation: [lean, 0, 0],   // condong keluar mengikuti muka kanopi
+    rotation: [lean, 0, 0],   
     mesh: Meshes.quad(gl),
     meshScale: [crownWidth + ov, B.crownHeight * 0.92, 1],
     material: createMaterial({
@@ -273,7 +226,7 @@ export function createTower({ gl, tm }) {
       texture: tm.get("crownSign"),
       specular: 0.15,
       nightEmissive: [1, 1, 1],
-      emissiveTexture: tm.get("crownSignGlow")   // tulisan menyala saat malam
+      emissiveTexture: tm.get("crownSignGlow")   
     }),
     castShadow: false
   }));
@@ -284,7 +237,6 @@ export function createTower({ gl, tm }) {
     material: createMaterial({ name: "atap", color: [0.45, 0.46, 0.47], specular: 0.05 })
   }));
 
-  // Properti atap: unit AC & antena
   const unitMaterial = createMaterial({ name: "unit atap", color: [0.7, 0.72, 0.73], specular: 0.3 });
 
   for (let i = 0; i < 3; i++) {
@@ -306,14 +258,12 @@ export function createTower({ gl, tm }) {
   return tower;
 }
 
-// =====================================================================
 // GEDUNG SEKITAR — KPA 2, gedung rendah kiri, gedung lama kanan
-// =====================================================================
 export function createNeighborBuildings({ gl, tm }) {
   const N = CONFIG.neighbors;
   const group = new Node("Gedung Sekitar");
 
-  // ---------------- Gedung parkir KPA 2 (kiri depan) ----------------
+  //  Gedung parkir KPA 2 (kiri depan) 
   const [kw, kh, kd] = N.kpa2.size;
   const kpa = group.add(new Node("Gedung Parkir KPA 2", {
     position: [N.kpa2.position[0], kh / 2, N.kpa2.position[2]]
@@ -369,7 +319,7 @@ export function createNeighborBuildings({ gl, tm }) {
     castShadow: false
   }));
 
-  // ---------------- Gedung rendah kiri (putih + kaca biru) -----------
+  //  Gedung rendah kiri (putih + kaca biru) 
   const [lw, lh, ld] = N.lowLeft.size;
   const low = group.add(new Node("Gedung Rendah Kiri", {
     position: [N.lowLeft.position[0], lh / 2, N.lowLeft.position[2]],
@@ -384,7 +334,7 @@ export function createNeighborBuildings({ gl, tm }) {
     material: createMaterial({ name: "atap putih", color: [0.9, 0.9, 0.9], specular: 0.1 })
   }));
 
-  // ---------------- Gedung lama kanan (atap pelana genteng) ----------
+  //  Gedung lama kanan (atap pelana genteng)
   const [ow, oh, od] = N.oldRight.size;
   const old = group.add(new Node("Gedung Lama Kanan", {
     position: [N.oldRight.position[0], oh / 2, N.oldRight.position[2]],

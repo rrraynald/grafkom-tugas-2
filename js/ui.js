@@ -1,20 +1,9 @@
-// =====================================================================
-// ui.js — Panel kontrol, HUD, diagram tree OTOMATIS, galeri & video
-// ---------------------------------------------------------------------
-// Diagram tree hubungan antar objek DIBUAT LANGSUNG dari scene graph
-// yang sedang berjalan (traversal node.children). Jadi diagram di
-// halaman PASTI sama persis dengan struktur kode.
-// =====================================================================
-
 
 const $ = (id) => document.getElementById(id);
 
 export function setupUI(app) {
   const { camera, lighting, textures, state } = app;
 
-  // ------------------------------------------------------------------
-  // HUD (gaya Praktikum 4/5: span yang diisi tiap frame)
-  // ------------------------------------------------------------------
   const hud = {
     fps: $("hudFps"),
     time: $("hudTime"),
@@ -33,7 +22,6 @@ export function setupUI(app) {
   let hudTimer = 0;
 
   app.updateHUD = () => {
-    // Update teks 4× per detik saja (hemat)
     const now = performance.now();
 
     if (now - hudTimer < 250) {
@@ -55,14 +43,12 @@ export function setupUI(app) {
     set(hud.lightModel, lighting.useBlinn ? "Blinn-Phong" : "Phong");
     set(hud.draw, `${state.drawCalls} draw / ${app.scene.countNodes()} node`);
 
-    // Sinkronkan slider jam bila siklus otomatis berjalan
     if (lighting.autoCycle && $("rangeHour")) {
       $("rangeHour").value = lighting.hour;
       set($("hourValue"), lighting.timeText);
     }
   };
 
-  // Dipanggil setelah toggle keyboard → samakan tampilan panel
   app.onStateChange = () => {
     check("chkShadow", lighting.useShadow);
     check("chkWireframe", state.wireframe);
@@ -79,16 +65,12 @@ export function setupUI(app) {
     set($("hourValue"), lighting.timeText);
   };
 
-  // ------------------------------------------------------------------
   // KONTROL ANIMASI
-  // ------------------------------------------------------------------
   on("btnPause", "click", () => { app.togglePause(); app.onStateChange(); });
 
   bindRange("rangeSpeed", "speedValue", (v) => { state.speed = v; return `${v.toFixed(2)}×`; }, state.speed);
 
-  // ------------------------------------------------------------------
   // WAKTU & CAHAYA
-  // ------------------------------------------------------------------
   bindRange("rangeHour", "hourValue", (v) => { lighting.hour = v; return lighting.timeText; }, lighting.hour);
   on("chkAutoDay", "change", (e) => { lighting.autoCycle = e.target.checked; });
 
@@ -113,9 +95,7 @@ export function setupUI(app) {
   bindRange("rangeShininess", "shininessValue", (v) => { lighting.shininessScale = v; return `${v.toFixed(2)}×`; }, lighting.shininessScale);
   bindRange("rangeExposure", "exposureValue", (v) => { lighting.exposure = v; return v.toFixed(2); }, lighting.exposure);
 
-  // ------------------------------------------------------------------
   // TEXTURE & TAMPILAN
-  // ------------------------------------------------------------------
   on("chkTexture", "change", (e) => { state.useTexture = e.target.checked; });
   on("chkWireframe", "change", (e) => { state.wireframe = e.target.checked; });
   on("chkFlat", "change", (e) => { state.shadingMode = e.target.checked ? "FLAT" : "SMOOTH"; });
@@ -124,9 +104,7 @@ export function setupUI(app) {
   on("btnWrap", "click", () => { textures.nextWrap(); app.onStateChange(); });
   bindRange("rangeUv", "uvValue", (v) => { state.uvScale = v; return `${v.toFixed(2)}×`; }, state.uvScale);
 
-  // ------------------------------------------------------------------
   // KAMERA
-  // ------------------------------------------------------------------
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => { camera.applyPreset(button.dataset.preset); app.onStateChange(); });
   });
@@ -136,7 +114,6 @@ export function setupUI(app) {
       camera.startMove(button.dataset.move);
       app.onStateChange();
 
-      // Putar video asli yang sesuai agar bisa dibandingkan langsung
       if (button.dataset.video) {
         playVideo(button.dataset.video, false);
       }
@@ -159,23 +136,18 @@ export function setupUI(app) {
     }
   });
 
-  // ------------------------------------------------------------------
   // FOTO PEMBANDING (kolom kiri, sebelah canvas)
-  // ------------------------------------------------------------------
   document.querySelectorAll("[data-photo]").forEach((button) => {
     button.addEventListener("click", () => {
       $("refPhoto").src = button.dataset.photo;
       document.querySelectorAll("[data-photo]").forEach((b) => b.classList.toggle("active", b === button));
 
-      // Arahkan kamera ke sudut yang mirip foto tersebut
       if (button.dataset.preset) camera.applyPreset(button.dataset.preset);
       if (button.dataset.move) camera.startMove(button.dataset.move);
     });
   });
 
-  // ------------------------------------------------------------------
   // VIDEO ASLI
-  // ------------------------------------------------------------------
   function playVideo(src, scroll = true) {
     const video = $("mainVideo");
 
@@ -196,22 +168,16 @@ export function setupUI(app) {
     button.addEventListener("click", () => playVideo(button.dataset.videoTab, false));
   });
 
-  // ------------------------------------------------------------------
-  // STOP-MOTION (urutan foto pan & tilt)
-  // ------------------------------------------------------------------
+  // STOP-MOTION 
   setupStopMotion();
 
-  // ------------------------------------------------------------------
   // DIAGRAM TREE dari scene graph
-  // ------------------------------------------------------------------
   renderSceneTree(app.scene);
 
   app.onStateChange();
 }
 
-// =====================================================================
 // Helper kecil
-// =====================================================================
 function set(element, text) {
   if (element && element.textContent !== text) {
     element.textContent = text;
@@ -258,9 +224,7 @@ function bindRange(id, labelId, apply, initial) {
   update();
 }
 
-// =====================================================================
 // STOP-MOTION PLAYER
-// =====================================================================
 function setupStopMotion() {
   const image = $("smImage");
   const slider = $("smSlider");
@@ -279,7 +243,6 @@ function setupStopMotion() {
   let current = "pan";
   let timer = null;
 
-  // Preload agar animasi mulus
   for (const s of Object.values(sets)) {
     for (let i = 1; i <= s.count; i++) {
       new Image().src = `${s.folder}${i}.jpg`;
@@ -324,13 +287,7 @@ function setupStopMotion() {
   select("pan");
 }
 
-// =====================================================================
 // DIAGRAM TREE OTOMATIS
-// ---------------------------------------------------------------------
-// Anak-anak berurutan dengan nama dasar sama (mis. "Bilah Louver 1..31")
-// diringkas menjadi satu baris "Bilah Louver 1 … 31  ×31" dan hanya
-// subtree anak pertama yang ditampilkan, agar diagram tetap terbaca.
-// =====================================================================
 function baseName(name) {
   return name.replace(/\s*\(.*\)$/, "").replace(/\s+\d+$/, "");
 }
@@ -403,7 +360,6 @@ function buildNodeElement(node, depth, repeatCount) {
     const list = document.createElement("div");
     list.className = "tree-children";
 
-    // Ringkas anak berulang
     let i = 0;
     const children = node.children;
 

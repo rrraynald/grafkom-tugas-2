@@ -1,27 +1,8 @@
-// =====================================================================
-// camera.js — Kamera, proyeksi, kontrol, preset & gerak kamera video
-// ---------------------------------------------------------------------
-// Pengembangan Praktikum 4 (Camera, Projection & 3D):
-//   - State camera {position, target, up} → Mat4.lookAt
-//   - projectionState {mode, fov, near, far} → perspective / orthographic
-//   - Near/Far preset (N), FOV ([ / ]), Orbit Camera (O), Reset (R)
-//
-// Tambahan untuk tugas ini:
-//   - Kamera "first person" dengan YAW (menengok kiri-kanan) dan PITCH
-//     (mendongak/menunduk). target = position + arah pandang.
-//   - SMOOTHING: posisi/arah yang terlihat mengejar nilai tujuan
-//     sedikit demi sedikit tiap frame → gerakan halus.
-//   - Preset kamera + GERAK KAMERA YANG MENIRU VIDEO survey:
-//     Stay, Stay 0.5×, Pan, Tilt, Zoom, Dolly in, dan Auto-tour.
-// =====================================================================
-
 import { Mat4, Vec3, degToRad, clamp, lerp } from "./math3d.js";
 import { CONFIG } from "./config.js";
 
 const C = CONFIG.camera;
 
-// Arah pandang dari yaw & pitch (derajat).
-// yaw = 0 → melihat ke −Z (ke arah gedung), yaw positif → ke kanan (+X)
 function directionFromYawPitch(yaw, pitch) {
   const y = degToRad(yaw);
   const p = degToRad(pitch);
@@ -43,7 +24,6 @@ function yawPitchFromDirection(dir) {
 }
 
 // Pilih sudut yang setara (±360°) paling dekat dengan sudut sekarang,
-// agar transisi tidak berputar jauh (misal dari 170° ke −170°).
 function closestAngle(current, target) {
   let diff = (target - current) % 360;
 
@@ -53,7 +33,7 @@ function closestAngle(current, target) {
   return current + diff;
 }
 
-// Preset near/far (sama konsepnya dengan Praktikum 4, tombol N)
+// Preset near/far
 const CLIP_PRESETS = [
   { near: C.near, far: C.far },
   { near: 2.0, far: 300 },
@@ -62,13 +42,13 @@ const CLIP_PRESETS = [
 
 export class Camera {
   constructor() {
-    // Nilai yang SEDANG dipakai (hasil smoothing)
+    // Nilai yang SEDANG dipakai
     this.position = [...C.defaultPosition];
     this.yaw = 0;
     this.pitch = 0;
     this.fov = C.fov;
 
-    // Nilai TUJUAN (diubah oleh input/preset)
+    // Nilai TUJUAN
     this.goal = { position: [...C.defaultPosition], yaw: 0, pitch: 0, fov: C.fov };
 
     this.up = [0, 1, 0];
@@ -76,16 +56,14 @@ export class Camera {
     this.clipPresetIndex = 0;
 
     this.orbit = { enabled: false, angle: 0, radius: 60, height: 9 };
-    this.activeMove = null;   // gerak kamera video yang sedang berjalan
+    this.activeMove = null;  
     this.autoTour = false;
     this.tourIndex = 0;
 
     this.reset(true);
   }
 
-  // ------------------------------------------------------------------
-  // Posisi default: PALING JAUH, seluruh menara terlihat (tombol R)
-  // ------------------------------------------------------------------
+  // Posisi default: PALING JAUH, seluruh menara terlihat
   reset(instant = false) {
     this.activeMove = null;
     this.autoTour = false;
@@ -123,15 +101,13 @@ export class Camera {
     return Vec3.add(this.position, this.forward);
   }
 
-  // ------------------------------------------------------------------
   // PRESET KAMERA (tombol 1-4)
-  // ------------------------------------------------------------------
   applyPreset(name) {
     this.stopMoves();
 
     const presets = {
       overview: [C.defaultPosition, C.defaultTarget, C.fov],
-      // Dekat gedung, mendongak (mirip foto stop-motion-tilt/7)
+      // Dekat gedung, mendongak
       near: [[-19.2, 1.6, 43.7], [-4.2, 22.2, 12.9], 50],
       // Sama dengan foto stop-motion-tilt/7: dari titik foto, mendongak ±20°
       tiltPhoto: [[-27, 1.6, 58], [-9.6, 15, 24.6], 42],
@@ -148,10 +124,7 @@ export class Camera {
     }
   }
 
-  // ------------------------------------------------------------------
   // GERAK KAMERA MENIRU VIDEO SURVEY (tombol 5-9)
-  // Tiap gerak = fungsi waktu (0..duration) yang mengatur nilai tujuan.
-  // ------------------------------------------------------------------
   startMove(type) {
     this.orbit.enabled = false;
 
@@ -192,7 +165,6 @@ export class Camera {
       },
 
       // ZOOM: posisi tetap, FOV menyempit (zoom in) lalu melebar
-      // (zoom out) — diarahkan ke totem F-SCIENTICS seperti video.
       zoom: {
         duration: 16,
         update: (t, d) => {
@@ -239,9 +211,7 @@ export class Camera {
     return this.autoTour;
   }
 
-  // ------------------------------------------------------------------
-  // Orbit camera (Challenge A Praktikum 4): berputar mengelilingi gedung
-  // ------------------------------------------------------------------
+  // Orbit camera
   toggleOrbit() {
     const enable = !this.orbit.enabled;
     this.stopMoves();
@@ -270,9 +240,7 @@ export class Camera {
     return preset;
   }
 
-  // ------------------------------------------------------------------
-  // INPUT state-based (dipanggil tiap frame dengan keys{} dari main.js)
-  // ------------------------------------------------------------------
+  // INPUT state-based
   handleKeys(keys, dt) {
     const anyKey = keys["w"] || keys["s"] || keys["a"] || keys["d"] ||
       keys["q"] || keys["e"] || keys["arrowup"] || keys["arrowdown"] ||
@@ -289,23 +257,14 @@ export class Camera {
     const right = Vec3.normalize(Vec3.cross(forward, this.up));
     let p = this.goal.position;
 
-    // W/↑ maju, S/↓ mundur SEPANJANG ARAH PANDANG
     if (keys["w"] || keys["arrowup"]) p = Vec3.add(p, Vec3.scale(forward, move));
     if (keys["s"] || keys["arrowdown"]) p = Vec3.add(p, Vec3.scale(forward, -move));
-
-    // A/D geser kiri/kanan (strafe)
     if (keys["a"]) p = Vec3.add(p, Vec3.scale(right, -move));
     if (keys["d"]) p = Vec3.add(p, Vec3.scale(right, move));
-
-    // PageUp/PageDown naik-turun (Challenge B Praktikum 4)
     if (keys["pageup"]) p = Vec3.add(p, [0, move, 0]);
     if (keys["pagedown"]) p = Vec3.add(p, [0, -move, 0]);
-
-    // ←/→ atau Q/E menengok (yaw)
     if (keys["arrowleft"] || keys["q"]) this.goal.yaw -= turn;
     if (keys["arrowright"] || keys["e"]) this.goal.yaw += turn;
-
-    // [ / ] mengubah FOV (zoom optik), dibatasi 15°–100°
     if (keys["["]) this.goal.fov -= 30 * dt;
     if (keys["]"]) this.goal.fov += 30 * dt;
 
@@ -332,9 +291,7 @@ export class Camera {
     this.goal.position = this.constrain(Vec3.add(this.goal.position, Vec3.scale(forward, amount)));
   }
 
-  // ------------------------------------------------------------------
   // BATASAN: tidak menembus menara, tidak di bawah tanah, tidak terlalu jauh
-  // ------------------------------------------------------------------
   constrain(p) {
     const b = CONFIG.building;
     const halfW = b.width / 2 + b.louverGap + 1.5;
@@ -367,9 +324,7 @@ export class Camera {
     return result;
   }
 
-  // ------------------------------------------------------------------
   // UPDATE per frame: gerak otomatis + smoothing
-  // ------------------------------------------------------------------
   update(dt) {
     // 1) Gerak video aktif
     if (this.activeMove) {
@@ -379,7 +334,7 @@ export class Camera {
       if (this.activeMove.time >= this.activeMove.duration) {
         this.activeMove = null;
 
-        // Auto-tour: lanjut ke gerak berikutnya (maju → pan → tilt → zoom)
+        // Auto-tour
         if (this.autoTour) {
           const sequence = ["dolly", "pan", "tilt", "zoom"];
           this.tourIndex = (this.tourIndex + 1) % sequence.length;
@@ -403,7 +358,7 @@ export class Camera {
     this.goal.pitch = clamp(this.goal.pitch, -80, 80);
     this.goal.fov = clamp(this.goal.fov, 15, 100);
 
-    // 4) SMOOTHING: k = 1 − e^(−s·dt) → mandiri dari FPS
+    // 4) SMOOTHING
     const k = 1 - Math.exp(-C.smoothing * dt);
     this.position = Vec3.lerp(this.position, this.goal.position, k);
     this.yaw = lerp(this.yaw, this.goal.yaw, k);
@@ -411,9 +366,7 @@ export class Camera {
     this.fov = lerp(this.fov, this.goal.fov, k);
   }
 
-  // ------------------------------------------------------------------
   // MATRIX
-  // ------------------------------------------------------------------
   getViewMatrix() {
     return Mat4.lookAt(this.position, this.target, this.up);
   }
@@ -426,8 +379,6 @@ export class Camera {
     }
 
     // Orthographic: ukuran disesuaikan dengan jarak ke menara agar
-    // besar gedung kira-kira sama saat toggle (Praktikum 4: "Menjaga
-    // Aspect Ratio pada Orthographic").
     const distance = Math.max(Vec3.length(Vec3.subtract(this.position, [0, 20, 0])), 10);
     const size = distance * Math.tan(degToRad(this.fov) / 2);
 

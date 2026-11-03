@@ -1,18 +1,3 @@
-// =====================================================================
-// main.js — Inisialisasi WebGL2, susun scene graph, render loop, input
-// ---------------------------------------------------------------------
-// Alur per frame (sama seperti fungsi render(time) di Praktikum 4 & 5,
-// hanya lebih banyak tahap):
-//
-//   1. dt = selisih waktu (maks 0.05 s)         ← sama dengan praktikum
-//   2. Input & kamera (state-based: keys{})
-//   3. scene.update(dt)   → animasi tiap node (rekursif)
-//   4. scene.computeWorld → world matrix = parent × local (rekursif)
-//   5. Lighting           → arah & warna matahari dari node Matahari
-//   6. SHADOW PASS        → render kedalaman dari sudut pandang matahari
-//   7. MAIN PASS          → langit, lalu semua objek (Phong/Blinn-Phong)
-//   8. HUD
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Mat4, normalMatrixFromMat4, Vec3 } from "./math3d.js";
@@ -35,7 +20,6 @@ import { createStudents } from "./student.js";
 import { createVehicles } from "./vehicle.js";
 import { setupUI } from "./ui.js";
 
-// ---------- WebGL2 Context (sama dengan praktikum) ----------
 const canvas = document.getElementById("glCanvas");
 const gl = canvas.getContext("webgl2", { antialias: true });
 
@@ -46,10 +30,8 @@ if (!gl) {
 }
 
 gl.enable(gl.DEPTH_TEST);
-// CULL_FACE sengaja TIDAK diaktifkan: papan/bendera/daun berupa bidang
-// tipis yang harus terlihat dari dua sisi.
 
-// ---------- Program shader ----------
+// Program shader
 const sceneProgram = createProgram(gl, sceneVertexShaderSource, sceneFragmentShaderSource);
 const shadowProgram = createProgram(gl, shadowVertexShaderSource, shadowFragmentShaderSource);
 const skyProgram = createProgram(gl, skyVertexShaderSource, skyFragmentShaderSource);
@@ -58,17 +40,12 @@ const sceneLoc = getLocations(gl, sceneProgram);
 const shadowLoc = getLocations(gl, shadowProgram);
 const skyLoc = getLocations(gl, skyProgram);
 
-// ---------- Texture ----------
+// Texture
 const textures = new TextureManager(gl);
 createAllTextures(textures);
 
-// Texture dari crop FOTO ASLI survey (daun pohon besar dari video
-// zoom-in-out, dibuat tileable dengan mirror 2×2). Menggantikan versi
-// prosedural setelah gambar dimuat — persis Challenge A Praktikum 5.
-// (Paving tetap prosedural karena foto paving terlalu miring/perspektif.)
 textures.loadImage("leaves", "./assets/textures/daun-foto.jpg");
 
-// Texture 1×1 putih & hitam: dipasang bila material tidak punya texture
 function createSolidTexture(rgba) {
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, t);
@@ -79,7 +56,6 @@ function createSolidTexture(rgba) {
 const whiteTexture = createSolidTexture([255, 255, 255, 255]);
 const blackTexture = createSolidTexture([0, 0, 0, 255]);
 
-// ---------- Shadow map (depth texture + framebuffer) ----------
 const SHADOW_SIZE = CONFIG.lighting.shadowMapSize;
 const shadowTexture = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -89,7 +65,6 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-// Mode "compare": GPU langsung membandingkan kedalaman (sampler2DShadow)
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
 
@@ -100,7 +75,7 @@ gl.drawBuffers([gl.NONE]);
 gl.readBuffer(gl.NONE);
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-// ---------- Kamera, cahaya, state global ----------
+// Kamera, cahaya, state global
 const camera = new Camera();
 const lighting = new Lighting();
 const world = { vehiclePositions: [] };
@@ -108,19 +83,17 @@ const world = { vehiclePositions: [] };
 const state = {
   paused: false,
   speed: CONFIG.animation.speed,
-  time: 0,                // waktu animasi (detik), berhenti saat pause
-  shadingMode: "SMOOTH",  // F: FLAT ↔ SMOOTH (Praktikum 5)
+  time: 0,                
+  shadingMode: "SMOOTH",  
   useTexture: true,
   wireframe: false,
-  depthTest: true,        // D di Praktikum 4 → di sini lewat panel
-  uvScale: 1.0,           // pengali UV global ([ / ] di Praktikum 5 → slider)
+  depthTest: true,        
+  uvScale: 1.0,           
   fps: 0,
   drawCalls: 0
 };
 
-// =====================================================================
 // SUSUN SCENE GRAPH
-// =====================================================================
 const context = { gl, tm: textures, lighting, world };
 const scene = new Node("Scene (root)");
 
@@ -135,9 +108,7 @@ scene.add(createVehicles(context));
 const sunNode = scene.find("Matahari");
 const skyNode = scene.find("Langit (sky dome)");
 
-// =====================================================================
-// HELPER ATTRIBUTE (sama dengan setupAttribute Praktikum 5)
-// =====================================================================
+// HELPER ATTRIBUTE
 function setupAttribute(buffer, location, size) {
   if (location === undefined || location < 0) {
     return;
@@ -154,9 +125,7 @@ function disableAttribute(location) {
   }
 }
 
-// =====================================================================
 // RESIZE: ukuran buffer gambar canvas = ukuran tampil × devicePixelRatio
-// =====================================================================
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
@@ -168,12 +137,7 @@ function resizeCanvas() {
   }
 }
 
-// =====================================================================
 // SHADOW PASS
-// =====================================================================
-// "Kamera" diletakkan di arah matahari dan memakai proyeksi ORTHOGRAPHIC
-// (sinar matahari sejajar). Hasilnya: depth texture berisi jarak
-// permukaan terdekat dari matahari untuk tiap piksel.
 function computeLightSpaceMatrix() {
   const area = CONFIG.lighting.shadowArea;
   const center = [0, 0, 12];
@@ -193,7 +157,6 @@ function renderShadowPass(drawList, lightSpaceMatrix) {
   gl.useProgram(shadowProgram);
   gl.uniformMatrix4fv(shadowLoc.uniforms.u_lightSpaceMatrix, false, lightSpaceMatrix);
 
-  // Polygon offset: kurangi "shadow acne"
   gl.enable(gl.POLYGON_OFFSET_FILL);
   gl.polygonOffset(2.0, 4.0);
 
@@ -212,17 +175,13 @@ function renderShadowPass(drawList, lightSpaceMatrix) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-// =====================================================================
 // SKY PASS
-// =====================================================================
 function renderSky(view, aspect) {
-  // Buang translasi dari view matrix → langit selalu mengelilingi kamera
   const viewRotation = new Float32Array(view);
   viewRotation[12] = 0;
   viewRotation[13] = 0;
   viewRotation[14] = 0;
 
-  // Langit selalu memakai perspective (walau mode orthographic aktif)
   const projection = Mat4.perspective(camera.fov * Math.PI / 180, aspect, 0.1, 10);
 
   gl.useProgram(skyProgram);
@@ -247,9 +206,7 @@ function renderSky(view, aspect) {
   gl.depthMask(true);
 }
 
-// =====================================================================
 // MAIN PASS
-// =====================================================================
 function setGlobalUniforms(view, projection, lightSpaceMatrix) {
   const u = sceneLoc.uniforms;
 
@@ -329,7 +286,6 @@ function renderScene(drawList, view, projection, lightSpaceMatrix) {
     const { node, matrix } = item;
     const mesh = node.mesh;
 
-    // Material yang sama berurutan tidak perlu dikirim ulang
     if (node.material !== lastMaterial) {
       setMaterialUniforms(node.material);
       lastMaterial = node.material;
@@ -339,7 +295,6 @@ function renderScene(drawList, view, projection, lightSpaceMatrix) {
     gl.uniformMatrix3fv(u.u_normalMatrix, false, normalMatrixFromMat4(matrix));
 
     if (state.wireframe) {
-      // Mode wireframe: gambar sisi segitiga sebagai garis
       setupAttribute(mesh.getWireBuffer(), a.a_position, 3);
       disableAttribute(a.a_normal);
       disableAttribute(a.a_texCoord);
@@ -355,11 +310,9 @@ function renderScene(drawList, view, projection, lightSpaceMatrix) {
   }
 }
 
-// =====================================================================
-// INPUT — state-based (keys{}) & event-based (toggle), seperti praktikum
-// =====================================================================
+// INPUT 
 const keys = {};
-let keyboardActive = false;   // aktif setelah canvas diklik (fokus)
+let keyboardActive = false;
 
 canvas.addEventListener("focus", () => { keyboardActive = true; });
 canvas.addEventListener("blur", () => {
@@ -375,7 +328,6 @@ window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
   keys[key] = true;
 
-  // Cegah halaman ikut scroll saat mengendalikan kamera
   if (event.key.startsWith("Arrow") || key === " " || key === "pageup" || key === "pagedown") {
     event.preventDefault();
   }
@@ -451,9 +403,7 @@ canvas.addEventListener("wheel", (event) => {
   camera.dollyBy(-Math.sign(event.deltaY) * 3);
 }, { passive: false });
 
-// =====================================================================
 // RENDER LOOP
-// =====================================================================
 let lastTime = 0;
 let fpsFrames = 0;
 let fpsTimer = 0;
@@ -461,7 +411,7 @@ let fpsTimer = 0;
 function render(time) {
   let dt = (time - lastTime) * 0.001;
   lastTime = time;
-  dt = Math.min(dt, 0.05);                       // sama dengan praktikum
+  dt = Math.min(dt, 0.05);                      
 
   // FPS
   fpsFrames++;
@@ -473,36 +423,30 @@ function render(time) {
     fpsTimer = 0;
   }
 
-  // Waktu animasi (berhenti saat pause, dipercepat oleh slider)
   const animDt = state.paused ? 0 : dt * state.speed;
   state.time += animDt;
 
-  // Kamera tetap bisa digerakkan walau animasi di-pause
   if (keyboardActive) {
     camera.handleKeys(keys, dt);
   }
 
   camera.update(dt);
 
-  // 3) Animasi & 4) traversal scene graph
   scene.update(animDt, state.time);
   const drawList = [];
   scene.computeWorld(Mat4.identity(), drawList);
 
-  // Langit digambar terpisah (program SKY)
   const objects = drawList.filter((item) => !item.node.userData.skyDome);
 
-  // 5) Lighting dari posisi node Matahari
   lighting.update(animDt, sunNode.getWorldPosition());
 
-  // 6) Shadow pass
+
   const lightSpaceMatrix = computeLightSpaceMatrix();
 
   if (lighting.useShadow && lighting.lightIntensity > 0.01 && !state.wireframe) {
     renderShadowPass(objects, lightSpaceMatrix);
   }
 
-  // 7) Main pass
   resizeCanvas();
   gl.viewport(0, 0, canvas.width, canvas.height);
   const sky = lighting.skyHorizon;
@@ -523,15 +467,12 @@ function render(time) {
   renderScene(objects, view, projection, lightSpaceMatrix);
   state.drawCalls = objects.length;
 
-  // 8) HUD
   app.updateHUD();
 
   requestAnimationFrame(render);
 }
 
-// =====================================================================
-// OBJEK APP — dibagikan ke ui.js (panel kontrol & diagram tree)
-// =====================================================================
+// OBJEK APP
 const app = {
   gl, canvas, scene, camera, lighting, textures, state, CONFIG,
   togglePause() {
@@ -541,11 +482,11 @@ const app = {
   get meshCount() {
     return getMeshCount();
   },
-  updateHUD() {},       // diisi oleh ui.js
-  onStateChange() {}    // diisi oleh ui.js
+  updateHUD() {},       
+  onStateChange() {}   
 };
 
 setupUI(app);
-window.app = app;      // memudahkan eksperimen lewat Console saat demo
+window.app = app;
 
 requestAnimationFrame(render);

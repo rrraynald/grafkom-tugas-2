@@ -1,17 +1,3 @@
-// =====================================================================
-// lighting.js — Matahari, siklus siang-malam, lampu titik
-// ---------------------------------------------------------------------
-// Praktikum 5 memakai SATU lampu titik (u_lightPosition). Di scene luar
-// ruangan, sumber cahaya utama adalah MATAHARI yang sangat jauh, sehingga
-// sinarnya dianggap SEJAJAR → DIRECTIONAL LIGHT (hanya punya arah).
-//
-// Arah matahari diambil dari posisi dunia node "Matahari" di scene graph
-// (Matahari adalah anak dari "Pivot Matahari" yang berotasi). Jadi rotasi
-// hierarki sekaligus mengatur arah cahaya, warna langit, dan bayangan.
-//
-// Lampu taman / pos satpam = POINT LIGHT (seperti praktikum), hanya
-// menyala saat malam (dikalikan nightFactor).
-// =====================================================================
 
 import { CONFIG } from "./config.js";
 import { Vec3, clamp, lerp } from "./math3d.js";
@@ -30,28 +16,23 @@ function mix3(a, b, t) {
 
 export class Lighting {
   constructor() {
-    this.hour = L.startHour;     // jam (0..24)
-    this.autoCycle = false;      // siklus otomatis
+    this.hour = L.startHour;     
+    this.autoCycle = false;      
     this.ambientStrength = L.ambientStrength;
     this.sunIntensity = L.sunIntensity;
     this.specularStrength = L.specularStrength;
     this.shininessScale = L.shininessScale;
-
-    // Toggle komponen (panel UI, untuk demo ke dosen)
     this.useAmbient = true;
     this.useDiffuse = true;
     this.useSpecular = true;
-    this.useBlinn = true;        // B: Blinn-Phong ↔ Phong (praktikum)
+    this.useBlinn = true;        
     this.useShadow = true;
     this.useFog = true;
     this.useToneMapping = true;
     this.exposure = L.exposure;
-    this.cloudCover = L.cloudCover;   // lapisan awan di shader langit
+    this.cloudCover = L.cloudCover;
     this.cloudColor = [1, 1, 1];
-
-    this.pointLights = [];       // { position, color }
-
-    // Hasil perhitungan per frame (dibaca main.js → uniform)
+    this.pointLights = [];      
     this.lightDirection = [0, 1, 0];
     this.lightColor = [1, 1, 1];
     this.lightIntensity = 1;
@@ -69,8 +50,6 @@ export class Lighting {
     }
   }
 
-  // Sudut pivot matahari (derajat) dari jam: 06.00 = 0° (terbit),
-  // 12.00 = 90° (di atas kepala), 18.00 = 180° (terbenam).
   get sunAngle() {
     return ((this.hour - 6) / 12) * 180;
   }
@@ -81,25 +60,20 @@ export class Lighting {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
-  // ------------------------------------------------------------------
-  // Dipanggil tiap frame. sunWorldPosition = posisi node Matahari.
-  // ------------------------------------------------------------------
   update(dt, sunWorldPosition) {
     if (this.autoCycle) {
       this.hour = (this.hour + (24 / L.dayLengthSeconds) * dt) % 24;
     }
 
     const sunDir = Vec3.normalize(sunWorldPosition);
-    const elevation = sunDir[1];         // sin(sudut elevasi)
+    const elevation = sunDir[1];         
     this.sunElevation = elevation;
 
-    // ---- Faktor-faktor waktu ----
-    const day = smoothstep(-0.08, 0.22, elevation);           // 0 malam → 1 siang
-    const golden = 1 - smoothstep(0.0, 0.38, Math.abs(elevation)); // dekat horizon
+    const day = smoothstep(-0.08, 0.22, elevation);           
+    const golden = 1 - smoothstep(0.0, 0.38, Math.abs(elevation));
     const isAfternoon = this.hour >= 12 && this.hour < 24 ? 1 : 0;
     this.nightFactor = 1 - smoothstep(-0.12, 0.1, elevation);
 
-    // ---- Warna matahari: pagi hangat, siang putih, sore jingga ----
     const noonColor = [1.0, 0.97, 0.92];
     const morningColor = [1.0, 0.82, 0.62];
     const eveningColor = [1.0, 0.56, 0.30];
@@ -109,7 +83,6 @@ export class Lighting {
     let direction = sunDir;
     let intensity = this.sunIntensity * smoothstep(-0.03, 0.18, elevation) * 0.95;
 
-    // ---- Malam: cahaya bulan biru lemah dari arah berlawanan ----
     if (elevation < 0.0) {
       const moon = 0.16 * smoothstep(0.0, -0.2, elevation);
       direction = Vec3.normalize([-sunDir[0], Math.abs(sunDir[1]) + 0.35, -sunDir[2]]);
@@ -121,8 +94,7 @@ export class Lighting {
     this.lightColor = color;
     this.lightIntensity = intensity;
 
-    // ---- Warna langit ----
-    // Siang: biru muda pucat & horizon keputihan (langit berawan di foto)
+    // Warna langit
     const dayTop = [0.58, 0.69, 0.85];
     const dayHorizon = [0.86, 0.88, 0.90];
     const duskTop = [0.28, 0.32, 0.55];
@@ -153,7 +125,7 @@ export class Lighting {
     return this.useFog ? L.fogDensity * lerp(1, 1.6, this.nightFactor) : 0;
   }
 
-  // Data lampu titik untuk uniform array (flatten ke Float32Array)
+  // Data lampu titik untuk uniform array
   getPointLightUniforms() {
     const count = this.nightFactor > 0.02 ? this.pointLights.length : 0;
     const positions = new Float32Array(MAX_POINT_LIGHTS * 3);
